@@ -1,9 +1,6 @@
 #include <windows.h>
 #include <iostream>
-#include <processthreadsapi.h>
-#include <errhandlingapi.h>
 #include <tlhelp32.h>
-#include <cstdio>
 #include <TitanEngine.h>
 
 DWORD dwListingInfoBreakpoint = 0x60EBDD; // listing count at [ESI] and price at [ESI+8]
