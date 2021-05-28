@@ -3,17 +3,18 @@
 #include <tlhelp32.h>
 #include <TitanEngine.h>
 
+std::wstring wsProcessName = L"MapleLegends.exe";
 DWORD dwListingInfoBreakpoint = 0x60EBDD; // listing count at [ESI] and price at [ESI+8]
 DWORD dwItemInfoBreakpoint = 0x4B5A78; // item ID in EAX and on top of stack
 DWORD dwShopOpenStartEndBreakpoint = 0x5C04BF; // executed once at shop open start then once at shop open end
 
-HANDLE OpenProcessByName(std::wstring const& processName) {
+HANDLE OpenProcessByName() {
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (Process32First(snapshot, &entry) == TRUE) {
         while (Process32Next(snapshot, &entry) == TRUE) {
-            if (wcscmp(entry.szExeFile, processName.c_str()) == 0) {
+            if (wcscmp(entry.szExeFile, wsProcessName.c_str()) == 0) {
                 CloseHandle(snapshot);
                 return OpenProcess(PROCESS_ALL_ACCESS, FALSE, entry.th32ProcessID);
             }
@@ -65,7 +66,7 @@ bool EnableDebugPrivileges() {
 }
 
 int main() {
-    HANDLE hProcess = OpenProcessByName(L"MapleLegends.exe");
+    HANDLE hProcess = OpenProcessByName();
     if (hProcess == nullptr) {
         std::cout << "PROCESS NOT FOUND" << "\n";
         return 0;
@@ -90,6 +91,12 @@ int main() {
     }
 
     // TODO
+    //AttachDebugger
+    //DebugLoop
+    //GetContextData
+    //SetContextData
+    
+    //SetHardwareBreakPoint
 
     CloseHandle(hThread);
     CloseHandle(hProcess);
