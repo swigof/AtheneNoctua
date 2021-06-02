@@ -1,12 +1,13 @@
 #include <windows.h>
 #include <iostream>
 #include <tlhelp32.h>
+#include <ntstatus.h>
 
-std::wstring wsProcessName = L"MapleLegends.exe";
+std::wstring wsProcessName = L"notepad++.exe";
 DWORD dwPID = 0;
 DWORD dwTID = 0;
 
-DWORD dwListingInfoBreakpoint = 0x60EBDD; // listing count at [ESI] and price at [ESI+8]
+DWORD dwListingInfoBreakpoint = 0x6B95AAAB; //0x60EBDD; // listing count at [ESI] and price at [ESI+8]
 DWORD dwItemInfoBreakpoint = 0x4B5A78; // item ID in EAX and on top of stack
 DWORD dwShopOpenStartEndBreakpoint = 0x5C04BF; // executed once at shop open start then once at shop open end
 
@@ -67,14 +68,139 @@ bool EnableDebugPrivileges() {
     return true;
 }
 
-void SetBreakpoint(HANDLE hThread, DWORD address) {
-
+void HandleDebugEvent(DEBUG_EVENT* dbgEvent, CONTEXT* ctx, bool* bFirstBreakpoint, HANDLE* hThread) {
+    DWORD dbgStatus = DBG_EXCEPTION_NOT_HANDLED;
+    switch (dbgEvent->dwDebugEventCode) {
+    case EXCEPTION_DEBUG_EVENT:
+        std::cout << "exception - ";
+        switch (dbgEvent->u.Exception.ExceptionRecord.ExceptionCode) {
+        case EXCEPTION_BREAKPOINT:
+            if (*bFirstBreakpoint) {
+                std::cout << "first breakpoint";
+                *bFirstBreakpoint = false;
+            }
+            else {
+                std::cout << "breakpoint";
+                GetThreadContext(*hThread, ctx);
+                ctx->EFlags |= 1 << 16;
+                SetThreadContext(*hThread, ctx);
+            }
+            dbgStatus = DBG_CONTINUE;
+            break;
+        case STATUS_WX86_BREAKPOINT:
+            if (*bFirstBreakpoint) {
+                std::cout << "wx86 first breakpoint";
+                *bFirstBreakpoint = false;
+            }
+            else {
+                std::cout << "wx86 breakpoint";
+                GetThreadContext(*hThread, ctx);
+                ctx->EFlags |= 1 << 16;
+                SetThreadContext(*hThread, ctx);
+            }
+            dbgStatus = DBG_CONTINUE;
+            break;
+        case EXCEPTION_SINGLE_STEP:
+            std::cout << "single step";
+            break;
+        case STATUS_WX86_SINGLE_STEP:
+            std::cout << "wx86 single step";
+            break;
+        case EXCEPTION_ACCESS_VIOLATION:
+            std::cout << "access violation";
+            break;
+        case EXCEPTION_DATATYPE_MISALIGNMENT:
+            std::cout << "datatype misalignment";
+            break;
+        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+            std::cout << "array bounds exceeded";
+            break;
+        case EXCEPTION_FLT_DENORMAL_OPERAND:
+            std::cout << "flt denormal operand";
+            break;
+        case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+            std::cout << "flt divide by zero";
+            break;
+        case EXCEPTION_FLT_INEXACT_RESULT:
+            std::cout << "flt inexact result";
+            break;
+        case EXCEPTION_FLT_INVALID_OPERATION:
+            std::cout << "flt invalid operation";
+            break;
+        case EXCEPTION_FLT_OVERFLOW:
+            std::cout << "flt overflow";
+            break;
+        case EXCEPTION_FLT_STACK_CHECK:
+            std::cout << "flt stack check";
+            break;
+        case EXCEPTION_FLT_UNDERFLOW:
+            std::cout << "flt underflow";
+            break;
+        case EXCEPTION_INT_DIVIDE_BY_ZERO:
+            std::cout << "int divide by zero";
+            break;
+        case EXCEPTION_INT_OVERFLOW:
+            std::cout << "int overflow";
+            break;
+        case EXCEPTION_PRIV_INSTRUCTION:
+            std::cout << "priv instruction";
+            break;
+        case EXCEPTION_IN_PAGE_ERROR:
+            std::cout << "in page error";
+            break;
+        case EXCEPTION_ILLEGAL_INSTRUCTION:
+            std::cout << "illegal instruction";
+            break;
+        case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+            std::cout << "noncontinuable exception";
+            break;
+        case EXCEPTION_STACK_OVERFLOW:
+            std::cout << "stack overflow";
+            break;
+        case EXCEPTION_INVALID_DISPOSITION:
+            std::cout << "invalid disposition";
+            break;
+        case EXCEPTION_GUARD_PAGE:
+            std::cout << "guard page";
+            break;
+        case EXCEPTION_INVALID_HANDLE:
+            std::cout << "invalid handle";
+            break;
+        default:
+            std::cout << "unknown " << dbgEvent->u.Exception.ExceptionRecord.ExceptionCode;
+            break;
+        }
+        break;
+    case CREATE_THREAD_DEBUG_EVENT:
+        std::cout << "create thread";
+        break;
+    case CREATE_PROCESS_DEBUG_EVENT:
+        std::cout << "create process";
+        break;
+    case EXIT_THREAD_DEBUG_EVENT:
+        std::cout << "exit thread";
+        break;
+    case EXIT_PROCESS_DEBUG_EVENT:
+        std::cout << "exit process";
+        break;
+    case LOAD_DLL_DEBUG_EVENT:
+        std::cout << "load dll";
+        break;
+    case UNLOAD_DLL_DEBUG_EVENT:
+        std::cout << "unload dll";
+    case OUTPUT_DEBUG_STRING_EVENT:
+        std::cout << "output debug string";
+        break;
+    case RIP_EVENT:
+        std::cout << "rip";
+        break;
+    default:
+        std::cout << "unknown " << dbgEvent->dwDebugEventCode;
+        break;
+    }
+    std::cout << "\n";
+    ContinueDebugEvent(dbgEvent->dwProcessId, dbgEvent->dwThreadId, dbgStatus);
 }
-
-void SetContext(HANDLE hThread) {
-
-}
-
 
 int main() {
     HANDLE hProcess = OpenProcessByName();
@@ -102,11 +228,6 @@ int main() {
         return 0;
     }
 
-    CONTEXT ctx = { 0 };
-    ctx.ContextFlags = CONTEXT_ALL;
-    DEBUG_EVENT dbgEvent = { 0 };
-    DWORD dbgStatus = DBG_CONTINUE;
-
     DebugActiveProcess(dwPID);
     
     if (!DebugSetProcessKillOnExit(false)) {
@@ -114,41 +235,20 @@ int main() {
         return 0;
     }
 
+    CONTEXT ctx = { 0 };
+    ctx.ContextFlags = CONTEXT_ALL;
+
     GetThreadContext(hThread, &ctx);
     ctx.Dr7 |= 1;
     ctx.Dr0 = dwListingInfoBreakpoint;
     SetThreadContext(hThread, &ctx);
 
+    bool bFirstBreakpoint = true;
+    DEBUG_EVENT dbgEvent = { 0 };
+
     while(true) {
         WaitForDebugEvent(&dbgEvent, INFINITE);
-        dbgStatus = DBG_CONTINUE;
-        std::cout << dbgEvent.dwDebugEventCode << "\n";
-        switch (dbgEvent.dwDebugEventCode) {
-        case EXCEPTION_DEBUG_EVENT:
-            switch (dbgEvent.u.Exception.ExceptionRecord.ExceptionCode) {
-                case EXCEPTION_BREAKPOINT:
-                    std::cout << "breakpoint" << "\n";
-                    GetThreadContext(hThread, &ctx);
-                    ctx.Dr7 = 0;
-                    ctx.EFlags |= (1 << 8);
-                    SetThreadContext(hThread, &ctx);
-                    break;
-                case EXCEPTION_SINGLE_STEP:
-                    std::cout << "single step" << "\n";
-                    GetThreadContext(hThread, &ctx);
-                    ctx.EFlags &= ~(1 << 8);
-                    SetThreadContext(hThread, &ctx);
-                    break;
-                default:
-                    std::cout << "other exception" << "\n";
-                    dbgStatus = DBG_EXCEPTION_NOT_HANDLED;
-                    break;
-            }
-        default:
-            dbgStatus = DBG_EXCEPTION_NOT_HANDLED;
-            break;
-        }
-        ContinueDebugEvent(dbgEvent.dwProcessId, dbgEvent.dwThreadId, dbgStatus);
+        HandleDebugEvent(&dbgEvent, &ctx, &bFirstBreakpoint, &hThread);
     }
 
     GetThreadContext(hThread, &ctx);
