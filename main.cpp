@@ -2,6 +2,7 @@
 #include <iostream>
 #include <tlhelp32.h>
 #include <ntstatus.h>
+#include <CryVEHDebug.h>
 
 std::wstring wsProcessName = L"MapleLegends.exe";
 DWORD dwPID = 0;
