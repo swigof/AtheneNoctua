@@ -1,7 +1,6 @@
 #include <windows.h>
 #include <iostream>
 #include <tlhelp32.h>
-#include <CryVEHDebug.h>
 
 #define STATUS_WX86_SINGLE_STEP 			0x4000001E
 #define STATUS_WX86_BREAKPOINT				0x4000001F
@@ -72,31 +71,7 @@ bool EnableDebugPrivileges() {
 }
 
 LONG __stdcall ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
-	CryVEHDebugger* dbgInstance = CryVEHDebugger::GetInstance();
-	if (dbgInstance->IsRunning())
-	{
-		const SIZE_T excAddress = (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT ||
-			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT)
-		{
-			if (dbgInstance->GetBreakpointCount() > 0)
-			{
-				const int bpIndex = dbgInstance->FindBreakpoint(excAddress);
-				// Save context and insert single step!
-			}
-		}
-		else if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP ||
-			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_SINGLE_STEP)
-		{
-			const int bpCount = dbgInstance->GetBreakpointCount();
-			if (bpCount > 0)
-			{
-				// Find breakpoint and handle it!
-			}
-		}
-	}
-
-	// Let the application continue execution.
+	//todo
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
@@ -126,7 +101,7 @@ int main() {
 		return 0;
 	}
 
-	AddVectoredExceptionHandler(true, CryExceptionHandler);
+	// todo
 
 	CloseHandle(hThread);
 	return 0;
