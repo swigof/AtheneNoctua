@@ -70,7 +70,7 @@ bool EnableDebugPrivileges() {
 	return true;
 }
 
-LONG __stdcall ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
+LONG ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
 	//todo
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -101,8 +101,16 @@ int main() {
 		return 0;
 	}
 
-	// todo
+	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
+	if (hExceptionHandler == nullptr) {
+		std::cout << "FAILED TO ATTACH EXCEPTION HANDLER " << GetLastError() << "\n";
+		return 0;
+	}
 
+	//todo
+
+	RemoveVectoredExceptionHandler(hExceptionHandler);
+	CloseHandle(hExceptionHandler);
 	CloseHandle(hThread);
 	return 0;
 }
