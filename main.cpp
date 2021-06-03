@@ -5,11 +5,13 @@
 #define STATUS_WX86_SINGLE_STEP 			0x4000001E
 #define STATUS_WX86_BREAKPOINT				0x4000001F
 
-std::wstring wsProcessName = L"MapleLegends.exe";
+std::wstring wsProcessName = L"notepad++.exe";
+
 DWORD dwPID = 0;
 DWORD dwTID = 0;
+HANDLE hThread = nullptr;
 
-DWORD dwListingInfoBreakpoint = 0x60EBDD; // listing count at [ESI] and price at [ESI+8]
+DWORD dwListingInfoBreakpoint = 0x6B95AAAB; // 0x60EBDD; // listing count at [ESI] and price at [ESI+8]
 DWORD dwItemInfoBreakpoint = 0x4B5A78; // item ID in EAX and on top of stack
 DWORD dwShopOpenStartEndBreakpoint = 0x5C04BF; // executed once at shop open start then once at shop open end
 
@@ -70,9 +72,38 @@ bool EnableDebugPrivileges() {
 	return true;
 }
 
-LONG ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
-	//todo
-	return EXCEPTION_CONTINUE_EXECUTION;
+LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS *ExceptionInfo) {	
+	std::cout << "handling exception";
+	DWORD dwExcAddress = (DWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress; 
+	if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT || ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) {
+		std::cout << "bp";
+		CONTEXT ctx = *ExceptionInfo->ContextRecord;
+		ctx.ContextFlags = CONTEXT_ALL;
+		ctx.EFlags |= 16;
+		SetThreadContext(hThread, &ctx);
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+	else if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP || ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_SINGLE_STEP) {
+		std::cout << "ss";
+		CONTEXT ctx = *ExceptionInfo->ContextRecord;
+		ctx.ContextFlags = CONTEXT_ALL;
+		ctx.EFlags |= 16;
+		SetThreadContext(hThread, &ctx);
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void addHWBreakpoint(const DWORD address) {
+	SuspendThread(hThread);
+	CONTEXT ctx = { 0 };
+	ctx.ContextFlags = CONTEXT_ALL;
+	GetThreadContext(hThread, &ctx);
+	ctx.Dr7 |= 1;
+	ctx.Dr0 = address;
+	SetThreadContext(hThread, &ctx);
+	ResumeThread(hThread);
+	std::cout << "bp added";
 }
 
 int main() {
@@ -90,7 +121,7 @@ int main() {
 		return 0;
 	}
 
-	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwTID);
+	hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwTID);
 	if (hThread == nullptr) {
 		std::cout << "THREAD ACCESS DENIED " << GetLastError() << "\n";
 		return 0;
@@ -107,7 +138,13 @@ int main() {
 		return 0;
 	}
 
-	//todo
+	addHWBreakpoint(dwListingInfoBreakpoint);
+
+	// Needs some kind of dll injection 
+
+	while (true) {
+
+	}
 
 	RemoveVectoredExceptionHandler(hExceptionHandler);
 	CloseHandle(hExceptionHandler);
