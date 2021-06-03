@@ -1,8 +1,10 @@
 #include <windows.h>
 #include <iostream>
 #include <tlhelp32.h>
-#include <ntstatus.h>
 #include <CryVEHDebug.h>
+
+#define STATUS_WX86_SINGLE_STEP 			0x4000001E
+#define STATUS_WX86_BREAKPOINT				0x4000001F
 
 std::wstring wsProcessName = L"MapleLegends.exe";
 DWORD dwPID = 0;
@@ -69,65 +71,33 @@ bool EnableDebugPrivileges() {
 	return true;
 }
 
-void HandleDebugEvent(DEBUG_EVENT* dbgEvent, CONTEXT* ctx, bool* bFirstBreakpoint, HANDLE* hThread) {
-	DWORD dbgStatus = DBG_EXCEPTION_NOT_HANDLED;
-	switch (dbgEvent->dwDebugEventCode) {
-	case EXCEPTION_DEBUG_EVENT: {
-		std::cout << "exception - ";
-		DWORD dwCode = dbgEvent->u.Exception.ExceptionRecord.ExceptionCode;
-		if (dwCode == EXCEPTION_BREAKPOINT || dwCode == STATUS_WX86_BREAKPOINT) {
-			if (*bFirstBreakpoint) {
-				std::cout << "initial breakpoint";
-				*bFirstBreakpoint = false;
+LONG __stdcall ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
+	CryVEHDebugger* dbgInstance = CryVEHDebugger::GetInstance();
+	if (dbgInstance->IsRunning())
+	{
+		const SIZE_T excAddress = (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress;
+		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT ||
+			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT)
+		{
+			if (dbgInstance->GetBreakpointCount() > 0)
+			{
+				const int bpIndex = dbgInstance->FindBreakpoint(excAddress);
+				// Save context and insert single step!
 			}
-			else {
-				std::cout << "breakpoint";
-				GetThreadContext(*hThread, ctx);
-				ctx->EFlags |= 1 << 16;
-				SetThreadContext(*hThread, ctx);
+		}
+		else if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP ||
+			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_SINGLE_STEP)
+		{
+			const int bpCount = dbgInstance->GetBreakpointCount();
+			if (bpCount > 0)
+			{
+				// Find breakpoint and handle it!
 			}
-			dbgStatus = DBG_CONTINUE;
 		}
-		else if (dwCode == EXCEPTION_SINGLE_STEP || dwCode == STATUS_WX86_SINGLE_STEP) {
-			std::cout << "single step";
-			GetThreadContext(*hThread, ctx);
-			ctx->EFlags |= 1 << 16;
-			SetThreadContext(*hThread, ctx);
-			dbgStatus = DBG_CONTINUE;			
-		}
-		else {
-			std::cout << dbgEvent->u.Exception.ExceptionRecord.ExceptionCode;
-		}}
-		break;
-	case CREATE_THREAD_DEBUG_EVENT:
-		std::cout << "create thread";
-		break;
-	case CREATE_PROCESS_DEBUG_EVENT:
-		std::cout << "create process";
-		break;
-	case EXIT_THREAD_DEBUG_EVENT:
-		std::cout << "exit thread";
-		break;
-	case EXIT_PROCESS_DEBUG_EVENT:
-		std::cout << "exit process";
-		break;
-	case LOAD_DLL_DEBUG_EVENT:
-		std::cout << "load dll";
-		break;
-	case UNLOAD_DLL_DEBUG_EVENT:
-		std::cout << "unload dll";
-	case OUTPUT_DEBUG_STRING_EVENT:
-		std::cout << "output debug string";
-		break;
-	case RIP_EVENT:
-		std::cout << "rip";
-		break;
-	default:
-		std::cout << dbgEvent->dwDebugEventCode;
-		break;
 	}
-	std::cout << "\n";
-	ContinueDebugEvent(dbgEvent->dwProcessId, dbgEvent->dwThreadId, dbgStatus);
+
+	// Let the application continue execution.
+	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
 int main() {
@@ -156,37 +126,8 @@ int main() {
 		return 0;
 	}
 
-	if (!DebugActiveProcess(dwPID)) {
-		std::cout << "FAILED TO ATTACH DEBUGGER " << GetLastError() << "\n";
-		return 0;
-	}
+	AddVectoredExceptionHandler(true, CryExceptionHandler);
 
-	if (!DebugSetProcessKillOnExit(false)) {
-		std::cout << "FAILED TO SET KILL ON EXIT " << GetLastError() << "\n";
-		return 0;
-	}
-
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_ALL;
-
-	GetThreadContext(hThread, &ctx);
-	ctx.Dr7 |= 1;
-	ctx.Dr0 = dwListingInfoBreakpoint;
-	SetThreadContext(hThread, &ctx);
-
-	bool bFirstBreakpoint = true;
-	DEBUG_EVENT dbgEvent = { 0 };
-
-	while (true) {
-		WaitForDebugEvent(&dbgEvent, INFINITE);
-		HandleDebugEvent(&dbgEvent, &ctx, &bFirstBreakpoint, &hThread);
-	}
-
-	GetThreadContext(hThread, &ctx);
-	ctx.Dr7 = 0;
-	SetThreadContext(hThread, &ctx);
-
-	DebugActiveProcessStop(dwPID);
 	CloseHandle(hThread);
 	return 0;
 }
