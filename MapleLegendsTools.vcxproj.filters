@@ -37,5 +37,8 @@
     <ClInclude Include="d3d8\dxsdk\d3d8types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MapleLegendsTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,5 +1,7 @@
 #include <windows.h>
 #include <d3d8.h>
+#include <thread>
+#include "../MapleLegendsTools.h"
 
 struct d3d8_dll
 {
@@ -35,6 +37,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         d3d8.Direct3DCreate8 = GetProcAddress(d3d8.dll, "Direct3DCreate8");
         d3d8.ValidatePixelShader = GetProcAddress(d3d8.dll, "ValidatePixelShader");
         d3d8.ValidateVertexShader = GetProcAddress(d3d8.dll, "ValidateVertexShader");
+        std::thread t(StartTools);
+        t.detach();
     }
     break;
     case DLL_PROCESS_DETACH:
