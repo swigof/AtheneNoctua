@@ -4,8 +4,10 @@
 #include <stdio.h>
 
 HANDLE hThread = NULL;
+bool boolShopOpenFlag = false;
 
-// getting access violation, need right elevation? uac? 
+// getting access violation, rights problem? some otther undefined behavior causing instructional problems?
+// set bps in all threads?
 
 // seperate relevant functions into a debugger class
 HANDLE OpenMainThread() {
@@ -24,27 +26,68 @@ HANDLE OpenMainThread() {
 	CloseHandle(snapshot);
 	return NULL;
 }
+// software bps?
+// set returns bp #, use reset with this number to reset
+void SetBreakpoint(DWORD address) {
+	SuspendThread(hThread);
+	CONTEXT ctx = { 0 };
+	ctx.ContextFlags = CONTEXT_ALL;
+	GetThreadContext(hThread, &ctx);
+	ctx.Dr0 = address;
+	ctx.Dr7 = 1;
+	SetThreadContext(hThread, &ctx);
+	ResumeThread(hThread);
+}
 
+//use trap flag method to be able to reset the same breakpoint after
 LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
-	printf("handling exception 0x%08x\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
 	DWORD dwExcAddress = (DWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-	if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT || ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) {
-		CONTEXT ctx = *ExceptionInfo->ContextRecord;
-		ctx.ContextFlags = CONTEXT_ALL;
-		ctx.EFlags |= 16;
-		SetThreadContext(hThread, &ctx);
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-	else if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP || ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_SINGLE_STEP) {
-		CONTEXT ctx = *ExceptionInfo->ContextRecord;
-		ctx.ContextFlags = CONTEXT_ALL;
-		ctx.EFlags |= 16;
-		ctx.Dr0 = 0;
-		ctx.Dr7 = 0;
-		//SuspendThread(hThread);
-		SetThreadContext(hThread, &ctx);
-		//ResumeThread(hThread);
-
+	DWORD dwExcCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
+	printf("handling exception 0x%08x at 0x%08x\n", dwExcCode, dwExcAddress);
+	if (dwExcCode == EXCEPTION_SINGLE_STEP || dwExcCode == STATUS_WX86_SINGLE_STEP) {
+		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
+			if (!boolShopOpenFlag) {
+				boolShopOpenFlag = true;
+				CONTEXT ctx = *ExceptionInfo->ContextRecord;
+				ctx.ContextFlags = CONTEXT_ALL;
+				ctx.EFlags |= 16;
+				ctx.Dr0 = LISTING_INFO_INSTRUCTION;
+				ctx.Dr7 = 1;
+				SetThreadContext(hThread, &ctx);
+			}
+			else {
+				boolShopOpenFlag = false;
+				CONTEXT ctx = *ExceptionInfo->ContextRecord;
+				ctx.ContextFlags = CONTEXT_ALL;
+				ctx.EFlags |= 16;
+				ctx.Dr0 = ctx.Dr1 = ctx.Dr7 = 0;
+				SetThreadContext(hThread, &ctx);
+			}
+		}
+		if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
+			CONTEXT ctx = *ExceptionInfo->ContextRecord;
+			ctx.ContextFlags = CONTEXT_ALL;
+			ctx.EFlags |= 16;
+			ctx.Dr0 = ITEM_INFO_INSTRUCTION;
+			ctx.Dr1 = SHOP_OPEN_INSTRUCTION;
+			ctx.Dr7 = 0b00000101;
+			SetThreadContext(hThread, &ctx);
+		}
+		if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
+			CONTEXT ctx = *ExceptionInfo->ContextRecord;
+			ctx.ContextFlags = CONTEXT_ALL;
+			ctx.EFlags |= 16;
+			ctx.Dr0 = LISTING_INFO_INSTRUCTION;
+			SetThreadContext(hThread, &ctx);
+		}
+		else {
+			CONTEXT ctx = *ExceptionInfo->ContextRecord;
+			ctx.ContextFlags = CONTEXT_ALL;
+			ctx.EFlags |= 16;
+			ctx.Dr0 = 0;
+			ctx.Dr7 = 0;
+			SetThreadContext(hThread, &ctx);
+		}
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 	return EXCEPTION_CONTINUE_SEARCH;
@@ -65,14 +108,7 @@ void StartTools() {
 
 	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
 
-	SuspendThread(hThread);
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_ALL;
-	GetThreadContext(hThread, &ctx);
-	ctx.Dr7 |= 1;
-	ctx.Dr0 = LISTING_INFO_INSTRUCTION;
-	SetThreadContext(hThread, &ctx);
-	ResumeThread(hThread);
+	SetBreakpoint(SHOP_OPEN_INSTRUCTION);
 
 	while (true) {
 
@@ -80,7 +116,4 @@ void StartTools() {
 
 	CloseHandle(hThread);
 	CloseHandle(hExceptionHandler);
-	//get main thread of self process?
-	//just add vectored exception handler bababooey
-	//try HW bps? 
 }
