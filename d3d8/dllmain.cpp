@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <d3d8.h>
 #include <thread>
-#include "../MapleLegendsTools.h"
+#include "../AtheneNoctua.h"
 
 struct d3d8_dll
 {

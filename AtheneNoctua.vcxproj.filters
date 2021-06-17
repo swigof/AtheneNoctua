@@ -15,10 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MapleLegendsTools.cpp">
+    <ClCompile Include="AtheneNoctua.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="d3d8\dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debugger\Debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -37,7 +40,10 @@
     <ClInclude Include="d3d8\dxsdk\d3d8types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MapleLegendsTools.h">
+    <ClInclude Include="AtheneNoctua.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debugger\Debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

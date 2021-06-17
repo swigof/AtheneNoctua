@@ -20,7 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="d3d8\dllmain.cpp" />
-    <ClCompile Include="MapleLegendsTools.cpp" />
+    <ClCompile Include="AtheneNoctua.cpp" />
+    <ClCompile Include="debugger\Debugger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d8\d3d8.def" />
@@ -29,14 +30,16 @@
     <ClInclude Include="d3d8\dxsdk\d3d8.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8caps.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8types.h" />
-    <ClInclude Include="MapleLegendsTools.h" />
+    <ClInclude Include="AtheneNoctua.h" />
+    <ClInclude Include="debugger\Debugger.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{9bd9f67b-4903-4c4a-9cd2-bd38a2849e91}</ProjectGuid>
-    <RootNamespace>MapleLegendsTools</RootNamespace>
+    <RootNamespace>AtheneNoctua</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>AtheneNoctua</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
