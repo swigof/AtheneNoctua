@@ -102,33 +102,6 @@ void Debugger::UnsetHWBreakpoint(DWORD dwAddress, bool bSuspend)
 	CloseHandle(hThread);
 }
 
-void Debugger::SetContinueFlag(bool bSuspend) {
-	printf("setting continue flag\n");
-	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
-	if (bSuspend) {
-		SuspendThread(hThread);
-	}
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_ALL;
-	GetThreadContext(hThread, &ctx);
-	ctx.EFlags |= (1 << 16);
-	SetThreadContext(hThread, &ctx);
-
-	//not setting ???? trap flag wouldn't work either. No error return on set
-	//permission from somewhere? openthread? contextFlags? UAC admin? compare old work
-	printf("0x%08x - ", ctx.EFlags);
-	ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_ALL;
-	GetThreadContext(hThread, &ctx);
-	printf("0x%08x\n", ctx.EFlags);
-
-
-	if (bSuspend) {
-		ResumeThread(hThread);
-	}
-	CloseHandle(hThread);
-}
-
 void Debugger::ReadMemory(DWORD dwAddress, DWORD dwSize)
 {
 	//ReadProcessMemory(GetCurrentProcess(), dwAddress, , dwSize, );

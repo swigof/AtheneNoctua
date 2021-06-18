@@ -2,7 +2,7 @@
 
 // hash check for client version?
 // update?
-// scan for these instead of static?
+// scan for these instead of static? take down instruction values
 // need shop names (and ids?) on open 
 // need shop names/ids on map enter to check which have closed
 #define SHOP_OPEN_INSTRUCTION 0x5C04BF		// executed once on initial shop open and once when the shop has loaded

@@ -18,23 +18,23 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 			if (!boolShopOpenFlag) {
 				boolShopOpenFlag = true;
 				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
-				debugger.SetContinueFlag(false);
+				ExceptionInfo->ContextRecord->EFlags |= (1 << 16);
 			}
 			else {
 				boolShopOpenFlag = false;
 				debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
-				debugger.SetContinueFlag(false);
+				ExceptionInfo->ContextRecord->EFlags |= (1 << 16);
 			}
 		}
 		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
 			debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
 			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
-			debugger.SetContinueFlag(false);
+			ExceptionInfo->ContextRecord->EFlags |= (1 << 16);
 		}
 		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
 			debugger.UnsetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
 			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
-			debugger.SetContinueFlag(false);
+			ExceptionInfo->ContextRecord->EFlags |= (1 << 16);
 		}
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
@@ -50,7 +50,7 @@ void StartTools() {
 	}
 #endif
 
-	printf("DLL loaded.\n");
+	printf("DLL loaded\n");
 
 	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
 
@@ -60,6 +60,7 @@ void StartTools() {
 		
 	}
 
+	RemoveVectoredExceptionHandler(hExceptionHandler);
 	CloseHandle(hExceptionHandler);
 	printf("Exiting.\n");
 }

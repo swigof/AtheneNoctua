@@ -12,7 +12,6 @@ public:
 	~Debugger();
 	void SetHWBreakpoint(DWORD dwAddress, bool bSuspend = true);
 	void UnsetHWBreakpoint(DWORD dwAddress, bool bSuspend = true);
-	void SetContinueFlag(bool bSuspend = true);
 	void ReadMemory(DWORD dwAddress, DWORD dwSize);
 };
 
