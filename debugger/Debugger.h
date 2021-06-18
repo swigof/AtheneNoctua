@@ -5,13 +5,14 @@
 class Debugger
 {
 private:
-	HANDLE hThread;
+	DWORD dwThreadID;
 public:
 	Debugger();
+	Debugger(DWORD dwThreadID);
 	~Debugger();
-	void SetHWBreakpoint(DWORD dwAddress);
-	void ResetHWBreakpoint(DWORD dwAddress);
-	void SetContinueFlag();
+	void SetHWBreakpoint(DWORD dwAddress, bool bSuspend = true);
+	void UnsetHWBreakpoint(DWORD dwAddress, bool bSuspend = true);
+	void SetContinueFlag(bool bSuspend = true);
 	void ReadMemory(DWORD dwAddress, DWORD dwSize);
 };
 

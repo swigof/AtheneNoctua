@@ -2,10 +2,9 @@
 #include <TlHelp32.h>
 #include <stdio.h>
 
-// thread handle not null, same thread id as previously, just doesn't work.
 Debugger::Debugger()
 {
-	this->hThread = NULL;
+	dwThreadID = 0;
 	DWORD processID = GetCurrentProcessId();
 	THREADENTRY32 entry;
 	entry.dwSize = sizeof(THREADENTRY32);
@@ -13,8 +12,8 @@ Debugger::Debugger()
 	bool searching = true;
 	if (Thread32First(snapshot, &entry) == TRUE) {
 		while (Thread32Next(snapshot, &entry) == TRUE && searching) {
-			if (entry.th32OwnerProcessID == processID) {
-				this->hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, entry.th32ThreadID);
+			if (entry.th32OwnerProcessID == processID) {				
+				dwThreadID = entry.th32ThreadID;
 				searching = false;
 			}
 		}
@@ -22,75 +21,112 @@ Debugger::Debugger()
 	CloseHandle(snapshot);
 }
 
+Debugger::Debugger(DWORD dwThreadID) 
+{
+	this->dwThreadID = dwThreadID;
+}
+
 Debugger::~Debugger()
 {
-	CloseHandle(this->hThread);
 }
 
-void Debugger::SetHWBreakpoint(DWORD dwAddress)
+void Debugger::SetHWBreakpoint(DWORD dwAddress, bool bSuspend)
 {
-	SuspendThread(this->hThread);
+	printf("setting HWBP at 0x%08x\n", dwAddress);
+
+	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
+	if (bSuspend) {
+		SuspendThread(hThread);
+	}
 	CONTEXT ctx = { 0 };
-	GetThreadContext(this->hThread, &ctx);
 	ctx.ContextFlags = CONTEXT_ALL;
+	GetThreadContext(hThread, &ctx);
 	
-	if ((ctx.Dr7 & 0b00000001) == 0) {
+	if ((ctx.Dr7 & 1) == 0) {
 		ctx.Dr0 = dwAddress;
-		ctx.Dr7 |= 0b00000001;
+		ctx.Dr7 |= 1;
 	}
-	else if ((ctx.Dr7 & 0b00000100) == 0) {
+	else if ((ctx.Dr7 & (1 << 2)) == 0) {
 		ctx.Dr1 = dwAddress;
-		ctx.Dr7 |= 0b00000100;
+		ctx.Dr7 |= (1 << 2);
 	}
-	else if ((ctx.Dr7 & 0b00010000) == 0) {
+	else if ((ctx.Dr7 & (1 << 4)) == 0) {
 		ctx.Dr2 = dwAddress;
-		ctx.Dr7 |= 0b00010000;
+		ctx.Dr7 |= (1 << 4);
 	}
-	else if ((ctx.Dr7 & 0b01000000) == 0) {
+	else if ((ctx.Dr7 & (1 << 6)) == 0) {
 		ctx.Dr3 = dwAddress;
-		ctx.Dr7 |= 0b01000000;
+		ctx.Dr7 |= (1 << 6);
 	}
 
-	SetThreadContext(this->hThread, &ctx);
-	ResumeThread(this->hThread);
+	SetThreadContext(hThread, &ctx);
+	if (bSuspend) {
+		ResumeThread(hThread);
+	}
+	CloseHandle(hThread);
 }
 
-void Debugger::ResetHWBreakpoint(DWORD dwAddress)
+void Debugger::UnsetHWBreakpoint(DWORD dwAddress, bool bSuspend)
 {
-	SuspendThread(this->hThread);
+	printf("unsetting HWBP at 0x%08x\n", dwAddress);
+
+	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
+	if (bSuspend) {
+		SuspendThread(hThread);
+	}
 	CONTEXT ctx = { 0 };
-	GetThreadContext(this->hThread, &ctx);
 	ctx.ContextFlags = CONTEXT_ALL;
+	GetThreadContext(hThread, &ctx);
 
 	if (ctx.Dr0 == dwAddress) {
 		ctx.Dr0 = 0;
-		ctx.Dr7 &= ~(0b00000001);
+		ctx.Dr7 &= ~(1);
 	}
 	if (ctx.Dr1 == dwAddress) {
 		ctx.Dr1 = 0;
-		ctx.Dr7 &= ~(0b00000100);
+		ctx.Dr7 &= ~(1 << 2);
 	}
 	if (ctx.Dr2 == dwAddress) {
 		ctx.Dr2 = 0;
-		ctx.Dr7 &= ~(0b00010000);
+		ctx.Dr7 &= ~(1 << 4);
 	}
 	if (ctx.Dr3 == dwAddress) {
 		ctx.Dr3 = 0;
-		ctx.Dr7 &= ~(0b01000000);
+		ctx.Dr7 &= ~(1 << 6);
 	}
 
-	SetThreadContext(this->hThread, &ctx);
-	ResumeThread(this->hThread);
+	SetThreadContext(hThread, &ctx);
+	if (bSuspend) {
+		ResumeThread(hThread);
+	}
+	CloseHandle(hThread);
 }
 
-void Debugger::SetContinueFlag() {
-	SuspendThread(this->hThread);
+void Debugger::SetContinueFlag(bool bSuspend) {
+	printf("setting continue flag\n");
+	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
+	if (bSuspend) {
+		SuspendThread(hThread);
+	}
 	CONTEXT ctx = { 0 };
-	GetThreadContext(this->hThread, &ctx);
 	ctx.ContextFlags = CONTEXT_ALL;
-	ctx.EFlags |= 0b1000000000000000;
-	SetThreadContext(this->hThread, &ctx);
-	ResumeThread(this->hThread);
+	GetThreadContext(hThread, &ctx);
+	ctx.EFlags |= (1 << 16);
+	SetThreadContext(hThread, &ctx);
+
+	//not setting ???? trap flag wouldn't work either. No error return on set
+	//permission from somewhere? openthread? contextFlags? UAC admin? compare old work
+	printf("0x%08x - ", ctx.EFlags);
+	ctx = { 0 };
+	ctx.ContextFlags = CONTEXT_ALL;
+	GetThreadContext(hThread, &ctx);
+	printf("0x%08x\n", ctx.EFlags);
+
+
+	if (bSuspend) {
+		ResumeThread(hThread);
+	}
+	CloseHandle(hThread);
 }
 
 void Debugger::ReadMemory(DWORD dwAddress, DWORD dwSize)

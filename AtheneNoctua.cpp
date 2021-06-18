@@ -5,7 +5,7 @@
 #include "debugger/Debugger.h"
 
 bool boolShopOpenFlag = false;
-Debugger debugger;
+Debugger debugger = Debugger();
 
 LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 	DWORD dwExcAddress = (DWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress;
@@ -17,24 +17,24 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
 			if (!boolShopOpenFlag) {
 				boolShopOpenFlag = true;
-				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION);
-				debugger.SetContinueFlag();
+				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+				debugger.SetContinueFlag(false);
 			}
 			else {
 				boolShopOpenFlag = false;
-				debugger.ResetHWBreakpoint(LISTING_INFO_INSTRUCTION);
-				debugger.SetContinueFlag();
+				debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+				debugger.SetContinueFlag(false);
 			}
 		}
 		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
-			debugger.ResetHWBreakpoint(LISTING_INFO_INSTRUCTION);
-			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION);
-			debugger.SetContinueFlag();
+			debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
+			debugger.SetContinueFlag(false);
 		}
 		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
-			debugger.ResetHWBreakpoint(ITEM_INFO_INSTRUCTION);
-			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION);
-			debugger.SetContinueFlag();
+			debugger.UnsetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
+			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+			debugger.SetContinueFlag(false);
 		}
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
@@ -42,18 +42,18 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 }
 
 void StartTools() {
-	#ifdef _DEBUG 
+#ifdef _DEBUG 
 	if (AllocConsole()) {
 		freopen("CONOUT$", "w", stdout);
 		SetConsoleTitle("Console");
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 	}
-	#endif
+#endif
 
 	printf("DLL loaded.\n");
 
 	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
-	debugger = Debugger();
+
 	debugger.SetHWBreakpoint(SHOP_OPEN_INSTRUCTION);
 
 	while (true) {
