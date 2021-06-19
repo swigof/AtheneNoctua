@@ -7,7 +7,6 @@
 bool boolShopOpenFlag = false;
 Debugger debugger = Debugger();
 
-// only catching on SHOP_OPEN_INSTRUCTION. maybe context only editable from Exception ContextRecord? pass it to debugger to handle (including resuming)
 LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 	DWORD dwExcAddress = (DWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress;
 	DWORD dwExcCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
@@ -18,22 +17,22 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
 			if (!boolShopOpenFlag) {
 				boolShopOpenFlag = true;
-				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
 			}
 			else {
 				boolShopOpenFlag = false;
-				debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+				debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
 			}
 		}
 		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
-			debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
-			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
+			debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
 		}
 		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
-			debugger.UnsetHWBreakpoint(ITEM_INFO_INSTRUCTION, false);
-			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, false);
+			debugger.UnsetHWBreakpoint(ITEM_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
 		}
-		ExceptionInfo->ContextRecord->EFlags |= (1 << 16);
+		debugger.SetResumeFlag(ExceptionInfo->ContextRecord);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 	return EXCEPTION_CONTINUE_SEARCH;

@@ -30,18 +30,16 @@ Debugger::~Debugger()
 {
 }
 
-void Debugger::SetHWBreakpoint(DWORD dwAddress, bool bSuspend)
+void Debugger::SetHWBreakpoint(DWORD dwAddress) 
 {
 	printf("setting HWBP at 0x%08x\n", dwAddress);
 
 	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
-	if (bSuspend) {
-		SuspendThread(hThread);
-	}
+	SuspendThread(hThread);
 	CONTEXT ctx = { 0 };
 	ctx.ContextFlags = CONTEXT_ALL;
 	GetThreadContext(hThread, &ctx);
-	
+
 	if ((ctx.Dr7 & 1) == 0) {
 		ctx.Dr0 = dwAddress;
 		ctx.Dr7 |= 1;
@@ -60,46 +58,57 @@ void Debugger::SetHWBreakpoint(DWORD dwAddress, bool bSuspend)
 	}
 
 	SetThreadContext(hThread, &ctx);
-	if (bSuspend) {
-		ResumeThread(hThread);
-	}
+	ResumeThread(hThread);
 	CloseHandle(hThread);
 }
 
-void Debugger::UnsetHWBreakpoint(DWORD dwAddress, bool bSuspend)
+void Debugger::SetHWBreakpoint(DWORD dwAddress, CONTEXT* ctxRecord)
+{
+	printf("setting HWBP at 0x%08x\n", dwAddress);
+
+	if ((ctxRecord->Dr7 & 1) == 0) {
+		ctxRecord->Dr0 = dwAddress;
+		ctxRecord->Dr7 |= 1;
+	}
+	else if ((ctxRecord->Dr7 & (1 << 2)) == 0) {
+		ctxRecord->Dr1 = dwAddress;
+		ctxRecord->Dr7 |= (1 << 2);
+	}
+	else if ((ctxRecord->Dr7 & (1 << 4)) == 0) {
+		ctxRecord->Dr2 = dwAddress;
+		ctxRecord->Dr7 |= (1 << 4);
+	}
+	else if ((ctxRecord->Dr7 & (1 << 6)) == 0) {
+		ctxRecord->Dr3 = dwAddress;
+		ctxRecord->Dr7 |= (1 << 6);
+	}
+}
+
+void Debugger::UnsetHWBreakpoint(DWORD dwAddress, CONTEXT *ctxRecord)
 {
 	printf("unsetting HWBP at 0x%08x\n", dwAddress);
 
-	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, this->dwThreadID);
-	if (bSuspend) {
-		SuspendThread(hThread);
+	if (ctxRecord->Dr0 == dwAddress) {
+		ctxRecord->Dr0 = 0;
+		ctxRecord->Dr7 &= ~(1);
 	}
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_ALL;
-	GetThreadContext(hThread, &ctx);
+	if (ctxRecord->Dr1 == dwAddress) {
+		ctxRecord->Dr1 = 0;
+		ctxRecord->Dr7 &= ~(1 << 2);
+	}
+	if (ctxRecord->Dr2 == dwAddress) {
+		ctxRecord->Dr2 = 0;
+		ctxRecord->Dr7 &= ~(1 << 4);
+	}
+	if (ctxRecord->Dr3 == dwAddress) {
+		ctxRecord->Dr3 = 0;
+		ctxRecord->Dr7 &= ~(1 << 6);
+	}
+}
 
-	if (ctx.Dr0 == dwAddress) {
-		ctx.Dr0 = 0;
-		ctx.Dr7 &= ~(1);
-	}
-	if (ctx.Dr1 == dwAddress) {
-		ctx.Dr1 = 0;
-		ctx.Dr7 &= ~(1 << 2);
-	}
-	if (ctx.Dr2 == dwAddress) {
-		ctx.Dr2 = 0;
-		ctx.Dr7 &= ~(1 << 4);
-	}
-	if (ctx.Dr3 == dwAddress) {
-		ctx.Dr3 = 0;
-		ctx.Dr7 &= ~(1 << 6);
-	}
-
-	SetThreadContext(hThread, &ctx);
-	if (bSuspend) {
-		ResumeThread(hThread);
-	}
-	CloseHandle(hThread);
+void Debugger::SetResumeFlag(CONTEXT *ctxRecord)
+{
+	ctxRecord->EFlags |= (1 << 16);
 }
 
 void Debugger::ReadMemory(DWORD dwAddress, DWORD dwSize)
