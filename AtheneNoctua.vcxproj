@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d8\d3d8.def" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3d8\dxsdk\d3d8.h" />
