@@ -1,6 +1,7 @@
 #pragma once
 
 #define STATUS_WX86_SINGLE_STEP 0x4000001E
+#define STATUS_WX86_BREAKPOINT 0x4000001F
 
 // in order on any map/channel change
 #define CHANNEL_CHANGE_INSTRUCTION 0x65BC28 // channel-1 in EAX

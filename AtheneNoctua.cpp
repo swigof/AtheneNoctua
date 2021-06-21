@@ -15,26 +15,36 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 
 	if (dwExcCode == EXCEPTION_SINGLE_STEP || dwExcCode == STATUS_WX86_SINGLE_STEP) {
 		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
+			debugger.SetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
+		}
+		debugger.UnsetSingleStepFlag(ExceptionInfo->ContextRecord);
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+
+	if (dwExcCode == EXCEPTION_BREAKPOINT || dwExcCode == STATUS_WX86_BREAKPOINT) {
+		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
 			if (!boolShopOpenFlag) {
 				boolShopOpenFlag = true;
-				debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+				debugger.SetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 			}
 			else {
 				boolShopOpenFlag = false;
-				debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+				debugger.UnsetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 			}
+			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			debugger.SetSingleStepFlag(ExceptionInfo->ContextRecord);
 		}
 		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
-			debugger.UnsetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
-			debugger.SetHWBreakpoint(ITEM_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			debugger.SetINT3Breakpoint(ITEM_INFO_INSTRUCTION);
 		}
 		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
-			debugger.UnsetHWBreakpoint(ITEM_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
-			debugger.SetHWBreakpoint(LISTING_INFO_INSTRUCTION, ExceptionInfo->ContextRecord);
+			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			debugger.SetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 		}
-		debugger.SetResumeFlag(ExceptionInfo->ContextRecord);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
+
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -51,7 +61,7 @@ void StartTools() {
 
 	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
 
-	debugger.SetHWBreakpoint(SHOP_OPEN_INSTRUCTION);
+	debugger.SetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
 
 	while (true) {
 		

@@ -4,7 +4,7 @@
 
 Debugger::Debugger()
 {
-	dwThreadID = 0;
+	this->dwThreadID = 0;
 	DWORD processID = GetCurrentProcessId();
 	THREADENTRY32 entry;
 	entry.dwSize = sizeof(THREADENTRY32);
@@ -13,7 +13,7 @@ Debugger::Debugger()
 	if (Thread32First(snapshot, &entry) == TRUE) {
 		while (Thread32Next(snapshot, &entry) == TRUE && searching) {
 			if (entry.th32OwnerProcessID == processID) {				
-				dwThreadID = entry.th32ThreadID;
+				this->dwThreadID = entry.th32ThreadID;
 				searching = false;
 			}
 		}
@@ -106,13 +106,70 @@ void Debugger::UnsetHWBreakpoint(DWORD dwAddress, CONTEXT *ctxRecord)
 	}
 }
 
-void Debugger::SetResumeFlag(CONTEXT *ctxRecord)
+void Debugger::SetINT3Breakpoint(DWORD dwAddress)
 {
-	ctxRecord->EFlags |= (1 << 16);
+	printf("setting INT3BP at 0x%08x\n", dwAddress);
+
+	int* iptrAddress = reinterpret_cast<int*>(dwAddress);
+	DWORD dwOldProtect;
+	VirtualProtect(&dwAddress, 1, PAGE_READWRITE, &dwOldProtect);
+	BYTE byteInstruction;
+	memcpy(&byteInstruction, iptrAddress, 1);
+	INT3Breakpoint i3BP{dwAddress, byteInstruction};
+	this->vecINT3Breakpoints.push_back(i3BP);
+	memset(iptrAddress, 0xCC, 1);
+	VirtualProtect(&dwAddress, 1, dwOldProtect, &dwOldProtect);
+	FlushInstructionCache(GetCurrentProcess(), &dwAddress, 1);
 }
 
-void Debugger::ReadMemory(DWORD dwAddress, DWORD dwSize)
+void Debugger::UnsetINT3Breakpoint(DWORD dwAddress)
 {
-	//ReadProcessMemory(GetCurrentProcess(), dwAddress, , dwSize, );
-	//return 
+	printf("unsetting INT3BP at 0x%08x\n", dwAddress);
+
+	int* iptrAddress = reinterpret_cast<int*>(dwAddress);
+	DWORD dwOldProtect;
+	VirtualProtect(&dwAddress, 1, PAGE_READWRITE, &dwOldProtect);
+	BYTE byteInstruction;
+	for (auto it = vecINT3Breakpoints.begin(); it != vecINT3Breakpoints.end();) {
+		if (it->dwAddress == dwAddress) {
+			byteInstruction = it->byteInstruction;
+			it = vecINT3Breakpoints.erase(it);
+		}
+		else {
+			it++;
+		}
+	}
+	memset(iptrAddress, byteInstruction, 1);
+	VirtualProtect(&dwAddress, 1, dwOldProtect, &dwOldProtect);
+	FlushInstructionCache(GetCurrentProcess(), &dwAddress, 1);
+}
+
+void Debugger::INT3Stepback(CONTEXT *ctxRecord) 
+{
+	printf("stepping back instruction pointer\n");
+	ctxRecord->Eip--;
+}
+
+void Debugger::INT3UnsetStepback(CONTEXT *ctxRecord) 
+{
+	UnsetINT3Breakpoint(ctxRecord->Eip);
+	INT3Stepback(ctxRecord);
+}
+
+void Debugger::SetSingleStepFlag(CONTEXT* ctxRecord) 
+{
+	printf("setting single step flag");
+	ctxRecord->EFlags |= (1 << 8);
+}
+
+void Debugger::UnsetSingleStepFlag(CONTEXT* ctxRecord) 
+{
+	printf("unsetting single step flag");
+	ctxRecord->EFlags &= ~(1 << 8);
+}
+
+void Debugger::SetResumeFlag(CONTEXT *ctxRecord)
+{
+	printf("setting resume flag");
+	ctxRecord->EFlags |= (1 << 16);
 }
