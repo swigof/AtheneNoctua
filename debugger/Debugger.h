@@ -1,5 +1,7 @@
 #pragma once
 
+#define INT3_INSTRUCTION 0xCC
+
 #include <windows.h>
 #include <vector>
 

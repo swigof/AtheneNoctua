@@ -110,14 +110,15 @@ void Debugger::SetINT3Breakpoint(DWORD dwAddress)
 {
 	printf("setting INT3BP at 0x%08x\n", dwAddress);
 
-	int* iptrAddress = reinterpret_cast<int*>(dwAddress);
 	DWORD dwOldProtect;
 	VirtualProtect(&dwAddress, 1, PAGE_READWRITE, &dwOldProtect);
+
 	BYTE byteInstruction;
-	memcpy(&byteInstruction, iptrAddress, 1);
+	memcpy(&byteInstruction, (void*)dwAddress, 1);
 	INT3Breakpoint i3BP{dwAddress, byteInstruction};
 	this->vecINT3Breakpoints.push_back(i3BP);
-	memset(iptrAddress, 0xCC, 1);
+	memset((void*)dwAddress, INT3_INSTRUCTION, 1);
+
 	VirtualProtect(&dwAddress, 1, dwOldProtect, &dwOldProtect);
 	FlushInstructionCache(GetCurrentProcess(), &dwAddress, 1);
 }
@@ -126,9 +127,9 @@ void Debugger::UnsetINT3Breakpoint(DWORD dwAddress)
 {
 	printf("unsetting INT3BP at 0x%08x\n", dwAddress);
 
-	int* iptrAddress = reinterpret_cast<int*>(dwAddress);
 	DWORD dwOldProtect;
 	VirtualProtect(&dwAddress, 1, PAGE_READWRITE, &dwOldProtect);
+
 	BYTE byteInstruction;
 	for (auto it = vecINT3Breakpoints.begin(); it != vecINT3Breakpoints.end();) {
 		if (it->dwAddress == dwAddress) {
@@ -139,7 +140,8 @@ void Debugger::UnsetINT3Breakpoint(DWORD dwAddress)
 			it++;
 		}
 	}
-	memset(iptrAddress, byteInstruction, 1);
+	memset((void*)dwAddress, byteInstruction, 1);
+
 	VirtualProtect(&dwAddress, 1, dwOldProtect, &dwOldProtect);
 	FlushInstructionCache(GetCurrentProcess(), &dwAddress, 1);
 }
@@ -158,18 +160,18 @@ void Debugger::INT3UnsetStepback(CONTEXT *ctxRecord)
 
 void Debugger::SetSingleStepFlag(CONTEXT* ctxRecord) 
 {
-	printf("setting single step flag");
+	printf("setting single step flag\n");
 	ctxRecord->EFlags |= (1 << 8);
 }
 
 void Debugger::UnsetSingleStepFlag(CONTEXT* ctxRecord) 
 {
-	printf("unsetting single step flag");
+	printf("unsetting single step flag\n");
 	ctxRecord->EFlags &= ~(1 << 8);
 }
 
 void Debugger::SetResumeFlag(CONTEXT *ctxRecord)
 {
-	printf("setting resume flag");
+	printf("setting resume flag\n");
 	ctxRecord->EFlags |= (1 << 16);
 }
