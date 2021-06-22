@@ -5,6 +5,7 @@
 #include "debugger/Debugger.h"
 
 bool boolShopOpenFlag = false;
+DWORD dwResetBP = 0;
 Debugger debugger = Debugger();
 
 LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
@@ -14,10 +15,16 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 	printf("handling exception 0x%08x at 0x%08x\n", dwExcCode, dwExcAddress);
 
 	if (dwExcCode == EXCEPTION_SINGLE_STEP || dwExcCode == STATUS_WX86_SINGLE_STEP) {
-		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
-			debugger.SetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
+		if (dwResetBP != 0) {
+			if (dwResetBP != dwExcAddress) {
+				debugger.SetINT3Breakpoint(dwResetBP);
+				debugger.UnsetSingleStepFlag(ExceptionInfo->ContextRecord);
+				dwResetBP = 0;
+			}
+			else {
+				debugger.SetSingleStepFlag(ExceptionInfo->ContextRecord);
+			}
 		}
-		debugger.UnsetSingleStepFlag(ExceptionInfo->ContextRecord);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
@@ -31,15 +38,16 @@ LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
 				boolShopOpenFlag = false;
 				debugger.UnsetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 			}
-			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			dwResetBP = SHOP_OPEN_INSTRUCTION;
+			debugger.UnsetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
 			debugger.SetSingleStepFlag(ExceptionInfo->ContextRecord);
 		}
 		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
-			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			debugger.UnsetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 			debugger.SetINT3Breakpoint(ITEM_INFO_INSTRUCTION);
 		}
 		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
-			debugger.INT3UnsetStepback(ExceptionInfo->ContextRecord);
+			debugger.UnsetINT3Breakpoint(ITEM_INFO_INSTRUCTION);
 			debugger.SetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
 		}
 		return EXCEPTION_CONTINUE_EXECUTION;

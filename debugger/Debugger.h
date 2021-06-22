@@ -24,8 +24,6 @@ public:
 	void UnsetHWBreakpoint(DWORD dwAddress, CONTEXT* ctxRecord);
 	void SetINT3Breakpoint(DWORD dwAddress);
 	void UnsetINT3Breakpoint(DWORD dwAddress);
-	void INT3Stepback(CONTEXT* ctxRecord);
-	void INT3UnsetStepback(CONTEXT* ctxRecord);
 	void SetSingleStepFlag(CONTEXT* ctxRecord);
 	void UnsetSingleStepFlag(CONTEXT* ctxRecord);
 	void SetResumeFlag(CONTEXT* ctxRecord);

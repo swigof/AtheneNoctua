@@ -1,6 +1,5 @@
 ## TODOS
 * full application for just map tracking
-* INT3 breakpoints
 * hash checks for client version, disable if not same
 * scan for address instead of static. atleast take down instruction values to refind
 * timestamps appended to all data
