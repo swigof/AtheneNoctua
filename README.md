@@ -1,4 +1,5 @@
 ## TODOS
+* figure out function hooking/injection
 * full application for just map tracking
 * hash checks for client version, disable if not same
 * scan for address instead of static. atleast take down instruction values to refind
