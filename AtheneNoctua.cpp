@@ -1,59 +1,52 @@
 #include <windows.h>
-#include <TlHelp32.h>
 #include <stdio.h>
 #include "AtheneNoctua.h"
-#include "debugger/Debugger.h"
+#include <xstddef>
 
-bool boolShopOpenFlag = false;
-DWORD dwResetBP = 0;
-Debugger debugger = Debugger();
+DWORD mapID = 0;
+DWORD channel = 0;
 
-LONG WINAPI ExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
-	DWORD dwExcAddress = (DWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-	DWORD dwExcCode = ExceptionInfo->ExceptionRecord->ExceptionCode;
+DWORD mapchangejmpback = 0x006DBC4A;
+BYTE handlerAddressBytes[] = { 0x00, 0x00, 0x00, 0x00 };
 
-	printf("handling exception 0x%08x at 0x%08x\n", dwExcCode, dwExcAddress);
+__declspec(naked) void MapChangeHandler() { //make class for this?, 15 nop header, write to it with byte array of old instruction, jmp var trailer where var is calc from og addr + size
+	__asm mov [edi + 0x00000638], 0x00000001
+	__asm mov mapID, eax
+	printf("Map changed to %u\n", int(mapID));
 
-	if (dwExcCode == EXCEPTION_SINGLE_STEP || dwExcCode == STATUS_WX86_SINGLE_STEP) {
-		if (dwResetBP != 0) {
-			if (dwResetBP != dwExcAddress) {
-				debugger.SetINT3Breakpoint(dwResetBP);
-				debugger.UnsetSingleStepFlag(ExceptionInfo->ContextRecord);
-				dwResetBP = 0;
-			}
-			else {
-				debugger.SetSingleStepFlag(ExceptionInfo->ContextRecord);
-			}
-		}
-		return EXCEPTION_CONTINUE_EXECUTION;
+	__asm jmp mapchangejmpback
+}
+
+void AttachHook(DWORD address, DWORD instructionSize, void* handler) {
+	if (instructionSize < 6) {
+		printf("Failed to hook at %0x08x: instruction size of %u too small\n", address, instructionSize);
+		return;
 	}
+	DWORD dwOldProtect;
+	VirtualProtect((void*)address, instructionSize, PAGE_READWRITE, &dwOldProtect);
 
-	if (dwExcCode == EXCEPTION_BREAKPOINT || dwExcCode == STATUS_WX86_BREAKPOINT) {
-		if (dwExcAddress == SHOP_OPEN_INSTRUCTION) {
-			if (!boolShopOpenFlag) {
-				boolShopOpenFlag = true;
-				debugger.SetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
-			}
-			else {
-				boolShopOpenFlag = false;
-				debugger.UnsetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
-			}
-			dwResetBP = SHOP_OPEN_INSTRUCTION;
-			debugger.UnsetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
-			debugger.SetSingleStepFlag(ExceptionInfo->ContextRecord);
-		}
-		else if (dwExcAddress == LISTING_INFO_INSTRUCTION) {
-			debugger.UnsetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
-			debugger.SetINT3Breakpoint(ITEM_INFO_INSTRUCTION);
-		}
-		else if (dwExcAddress == ITEM_INFO_INSTRUCTION) {
-			debugger.UnsetINT3Breakpoint(ITEM_INFO_INSTRUCTION);
-			debugger.SetINT3Breakpoint(LISTING_INFO_INSTRUCTION);
-		}
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
+	BYTE instruction[15];
+	memcpy(instruction, (void*)address, instructionSize);
 
-	return EXCEPTION_CONTINUE_SEARCH;
+	printf("handler pointer %p\n", handler);
+	printf("handler address bytes pointer %p\n", handlerAddressBytes);
+
+	// all this is disgusting find a cleaner way to do it
+	handlerAddressBytes[0] = ((BYTE*)&handler)[0];
+	handlerAddressBytes[1] = ((BYTE*)&handler)[1];
+	handlerAddressBytes[2] = ((BYTE*)&handler)[2];
+	handlerAddressBytes[3] = ((BYTE*)&handler)[3];
+	void* handlerAddressBytesAddress = std::addressof(handlerAddressBytes);
+	BYTE handlerJump[] = {0xFF, 0x25, 0x00, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+	handlerJump[2] = ((BYTE*)&handlerAddressBytesAddress)[0];
+	handlerJump[3] = ((BYTE*)&handlerAddressBytesAddress)[1];
+	handlerJump[4] = ((BYTE*)&handlerAddressBytesAddress)[2];
+	handlerJump[5] = ((BYTE*)&handlerAddressBytesAddress)[3];
+
+	memcpy((void*)address, handlerJump, instructionSize);
+	
+	VirtualProtect((void*)address, instructionSize, dwOldProtect, &dwOldProtect);
+	FlushInstructionCache(GetCurrentProcess(), (void*)address, instructionSize);
 }
 
 void StartTools() {
@@ -67,15 +60,11 @@ void StartTools() {
 
 	printf("DLL loaded\n");
 
-	HANDLE hExceptionHandler = AddVectoredExceptionHandler(1, ExceptionHandler);
-
-	debugger.SetINT3Breakpoint(SHOP_OPEN_INSTRUCTION);
+	AttachHook(0x006DBC40, 10, MapChangeHandler);// intel xed_ild_decode() to get size instead of fixed?
 
 	while (true) {
 		
 	}
 
-	RemoveVectoredExceptionHandler(hExceptionHandler);
-	CloseHandle(hExceptionHandler);
 	printf("Exiting.\n");
 }

@@ -21,9 +21,6 @@
     <ClCompile Include="d3d8\dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="debugger\Debugger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d8\d3d8.def">
@@ -42,9 +39,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AtheneNoctua.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="debugger\Debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

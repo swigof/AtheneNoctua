@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="d3d8\dllmain.cpp" />
     <ClCompile Include="AtheneNoctua.cpp" />
-    <ClCompile Include="debugger\Debugger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d8\d3d8.def" />
@@ -32,7 +31,6 @@
     <ClInclude Include="d3d8\dxsdk\d3d8caps.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8types.h" />
     <ClInclude Include="AtheneNoctua.h" />
-    <ClInclude Include="debugger\Debugger.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -88,7 +86,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
     <TargetName>d3d8</TargetName>
   </PropertyGroup>
@@ -98,7 +96,7 @@
     <TargetName>d3d8</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
     <TargetName>d3d8</TargetName>
   </PropertyGroup>
