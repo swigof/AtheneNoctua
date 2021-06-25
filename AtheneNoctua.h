@@ -1,5 +1,15 @@
 #pragma once
 
+
+constexpr DWORD MAP_CHANGE_ADDRESS = 0x006DBC40;
+constexpr DWORD MAP_CHANGE_INSTRUCTION_SIZE = 10;
+constexpr DWORD MAP_CHANGE_JUMPBACK_ADDRESS = 0x006DBC4A;
+constexpr char* MAP_CHANGE_INSTRUCTION_BYTES = "\xC7\x87\x38\x06\x00\x00\x01\x00\x00\x00"; 
+
+
+
+
+
 // in order on any map/channel change
 #define CHANNEL_CHANGE_INSTRUCTION 0x65BC28 // channel-1 in EAX
 #define MAP_CHANGE_INSTRUCTION 0x6DBC3A     // map ID in EAX 

@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssemblyHook.cpp" />
     <ClCompile Include="d3d8\dllmain.cpp" />
     <ClCompile Include="AtheneNoctua.cpp" />
   </ItemGroup>
@@ -27,6 +28,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssemblyHook.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8caps.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8types.h" />
