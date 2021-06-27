@@ -1,5 +1,5 @@
 ## TODOS
-* full application for just map tracking
+* full application for just map tracking, need current player name & map name & if logged in
 * hash checks for client version, checks on instruction bytes, disable if not same
 * scan for address instead of static. atleast take down instruction values to refind
 * timestamps and strings for all data
