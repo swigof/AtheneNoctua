@@ -2,14 +2,15 @@
 #include "AtheneNoctua.h"
 #include "AssemblyHook.h"
 
-DWORD mapID = 0;
-DWORD channel = 0; // doesn't grab on first load
+bool updated = 0;
+DWORD mapID = -1;
+DWORD channel = -1; // doesn't grab on first load
 
 __declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
 	__asm mov mapID, eax
-	printf("Map changed to %u\n", int(mapID));
+	__asm mov updated, 1
 
 	__asm jmp MAP_CHANGE.next
 }
@@ -18,7 +19,7 @@ __declspec(naked) void ChannelChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
 	__asm mov channel, eax
-	printf("Channel changed to %u\n", int(channel));
+	__asm mov updated, 1
 
 	__asm jmp CHANNEL_CHANGE.next
 }
@@ -40,7 +41,22 @@ void StartTools() {
 	AssemblyHook channelChangeHook = AssemblyHook(CHANNEL_CHANGE.address, ChannelChangeHandler, CHANNEL_CHANGE.next, CHANNEL_CHANGE.size, CHANNEL_CHANGE.bytes);
 	channelChangeHook.Attach();
 
-	while (true) {}
+	DWORD oldMapID = -1;
+	DWORD oldChannel = -1;
+	while (true) {
+		Sleep(1000);
+		if (updated) {
+			updated = 0;
+			if (mapID != oldMapID) {
+				oldMapID = mapID;
+				printf("Map changed to %u\n", int(mapID));
+			}
+			if (channel != oldChannel) {
+				oldChannel = channel;
+				printf("Channel changed to %u\n", int(channel));
+			}
+		}
+	}
 
 	printf("Exiting\n");
 }
