@@ -1,9 +1,9 @@
 #include "AssemblyHook.h"
 #include <stdio.h>
 
-AssemblyHook::AssemblyHook(DWORD instructionAddress, DWORD** handlerAddress, DWORD jumpbackAddress, DWORD instructionSize, char* instructionBytes) {
+AssemblyHook::AssemblyHook(DWORD instructionAddress, void* handler, DWORD jumpbackAddress, DWORD instructionSize, char* instructionBytes) {
 	this->instructionAddress = instructionAddress;
-	this->handlerAddress = handlerAddress;
+	this->handlerAddress = (DWORD)handler;
 	this->jumpbackAddress = jumpbackAddress;
 	this->instructionSize = instructionSize;
 	this->instructionBytes = instructionBytes;
@@ -14,7 +14,6 @@ AssemblyHook::~AssemblyHook() {
 	this->Detach();
 }
 
-// not working
 void AssemblyHook::Attach() {
 	if (!attached) {
 		if (this->instructionSize < 6) {
@@ -24,16 +23,18 @@ void AssemblyHook::Attach() {
 		DWORD dwOldProtect;
 		VirtualProtect((void*)this->instructionAddress, this->instructionSize, PAGE_READWRITE, &dwOldProtect);
 
+		DWORD handlerAddressAddress = (DWORD)&this->handlerAddress;
 		BYTE handlerJump[] = { 0xFF, 0x25, 0x00, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-		handlerJump[2] = ((BYTE*)&(this->handlerAddress))[0];
-		handlerJump[3] = ((BYTE*)&(this->handlerAddress))[1];
-		handlerJump[4] = ((BYTE*)&(this->handlerAddress))[2];
-		handlerJump[5] = ((BYTE*)&(this->handlerAddress))[3];
+		handlerJump[2] = ((BYTE*)&handlerAddressAddress)[0];
+		handlerJump[3] = ((BYTE*)&handlerAddressAddress)[1];
+		handlerJump[4] = ((BYTE*)&handlerAddressAddress)[2];
+		handlerJump[5] = ((BYTE*)&handlerAddressAddress)[3];
 
 		memcpy((void*)this->instructionAddress, handlerJump, this->instructionSize);
 
 		VirtualProtect((void*)this->instructionAddress, this->instructionSize, dwOldProtect, &dwOldProtect);
 		FlushInstructionCache(GetCurrentProcess(), (void*)this->instructionAddress, this->instructionSize);
+		this->attached = true;
 	}
 }
 
@@ -46,5 +47,6 @@ void AssemblyHook::Detach() {
 
 		VirtualProtect((void*)this->instructionAddress, this->instructionSize, dwOldProtect, &dwOldProtect);
 		FlushInstructionCache(GetCurrentProcess(), (void*)this->instructionAddress, this->instructionSize);
+		this->attached = false;
 	}
 }
