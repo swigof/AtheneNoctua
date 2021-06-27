@@ -8,6 +8,7 @@ AssemblyHook::AssemblyHook(DWORD instructionAddress, void* handler, DWORD jumpba
 	this->instructionSize = instructionSize;
 	this->instructionBytes = instructionBytes;
 	this->attached = false;
+	this->WriteInstructionToHandler();
 }
 
 AssemblyHook::~AssemblyHook() {
@@ -49,4 +50,14 @@ void AssemblyHook::Detach() {
 		FlushInstructionCache(GetCurrentProcess(), (void*)this->instructionAddress, this->instructionSize);
 		this->attached = false;
 	}
+}
+
+void AssemblyHook::WriteInstructionToHandler() {
+	DWORD dwOldProtect;
+	VirtualProtect((void*)this->handlerAddress, this->instructionSize, PAGE_READWRITE, &dwOldProtect);
+
+	memcpy((void*)this->handlerAddress, this->instructionBytes, this->instructionSize);
+
+	VirtualProtect((void*)this->handlerAddress, this->instructionSize, dwOldProtect, &dwOldProtect);
+	FlushInstructionCache(GetCurrentProcess(), (void*)this->handlerAddress, this->instructionSize);
 }

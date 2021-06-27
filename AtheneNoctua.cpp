@@ -6,7 +6,7 @@ DWORD mapID = 0;
 DWORD channel = 0;
 
 __declspec(naked) void MapChangeHandler() {
-	__asm mov[edi + 0x00000638], 0x00000001 // use 15 nops then replace with bytecode from class context
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
 	__asm mov mapID, eax
 	printf("Map changed to %u\n", int(mapID));
@@ -28,9 +28,7 @@ void StartTools() {
 	AssemblyHook mapChangeHook = AssemblyHook(MAP_CHANGE_ADDRESS, MapChangeHandler, MAP_CHANGE_JUMPBACK_ADDRESS, MAP_CHANGE_INSTRUCTION_SIZE, MAP_CHANGE_INSTRUCTION_BYTES);
 	mapChangeHook.Attach();
 
-	while (true) {
-		
-	}
+	while (true) {}
 
-	printf("Exiting.\n");
+	printf("Exiting\n");
 }

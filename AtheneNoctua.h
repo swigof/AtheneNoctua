@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Windows.h>
+
 constexpr DWORD MAP_CHANGE_ADDRESS = 0x006DBC40;
 constexpr DWORD MAP_CHANGE_INSTRUCTION_SIZE = 10;
 constexpr DWORD MAP_CHANGE_JUMPBACK_ADDRESS = 0x006DBC4A;
