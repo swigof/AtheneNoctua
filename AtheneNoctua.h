@@ -10,7 +10,7 @@ struct hook_point {
 };
 
 constexpr hook_point MAP_CHANGE = { 0x006DBC40, 10, 0x006DBC4A, "\xC7\x87\x38\x06\x00\x00\x01\x00\x00\x00" };
-constexpr hook_point CHANNEL_CHANGE = { 0x0065BC2C, 10, 0x0065BC36, "\xC7\x86\x98\x2C\x00\x00\x01\x00\x00\x00" };
+constexpr hook_point CHANNEL_CHANGE = { 0x0065BC25, 5, 0x0065BC2A, "\x39\x45\xF0\x89\x03" };
 
 
 // in order on shop open

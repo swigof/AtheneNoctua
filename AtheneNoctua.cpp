@@ -4,7 +4,7 @@
 
 bool updated = 0;
 DWORD mapID = -1;
-DWORD channel = -1; // doesn't grab on first load
+DWORD channel = -1;
 
 __declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
