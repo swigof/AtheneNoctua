@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 // adjust to not keep track of duplicate vars from constants
+// take hook_point in constructor
 class AssemblyHook
 {
 private:
