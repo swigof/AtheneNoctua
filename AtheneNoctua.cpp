@@ -42,6 +42,22 @@ __declspec(naked) void CharacterChangeHandler() {
 	__asm jmp CHARACTER_CHANGE.next
 }
 
+__declspec(naked) void MapNameChangeHandler() {
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+
+
+
+	__asm jmp MAP_NAME_CHANGE.next
+}
+
+__declspec(naked) void AreaNameChangeHandler() {
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+
+
+
+	__asm jmp AREA_NAME_CHANGE.next
+}
+
 void StartTools() {
 #ifdef _DEBUG 
 	if (AllocConsole()) {
@@ -61,6 +77,12 @@ void StartTools() {
 
 	AssemblyHook characterChangeHook = AssemblyHook(CHARACTER_CHANGE.address, CharacterChangeHandler, CHARACTER_CHANGE.next, CHARACTER_CHANGE.size, CHARACTER_CHANGE.bytes);
 	characterChangeHook.Attach();
+
+	AssemblyHook mapNameChangeHook = AssemblyHook(MAP_NAME_CHANGE.address, MapNameChangeHandler, MAP_NAME_CHANGE.next, MAP_NAME_CHANGE.size, MAP_NAME_CHANGE.bytes);
+	mapNameChangeHook.Attach();
+
+	AssemblyHook areaNameChangeHook = AssemblyHook(AREA_NAME_CHANGE.address, AreaNameChangeHandler, AREA_NAME_CHANGE.next, AREA_NAME_CHANGE.size, AREA_NAME_CHANGE.bytes);
+	areaNameChangeHook.Attach();
 
 	DWORD oldMapID = -1;
 	DWORD oldChannel = -1;
