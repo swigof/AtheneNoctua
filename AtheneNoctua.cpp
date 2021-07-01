@@ -7,21 +7,13 @@ bool updated = 0;
 DWORD mapID = -1;
 DWORD channel = -1;
 character_name characterName = {};
-
-__declspec(naked) void MapChangeHandler() {
-	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
-
-	__asm mov mapID, eax
-	__asm mov updated, 1
-
-	__asm jmp MAP_CHANGE.next
-}
+memory_string mapName = {};
+memory_string areaName = {};
 
 __declspec(naked) void ChannelChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
 	__asm mov channel, eax
-	__asm mov updated, 1
 
 	__asm jmp CHANNEL_CHANGE.next
 }
@@ -36,26 +28,44 @@ __declspec(naked) void CharacterChangeHandler() {
 	__asm mov characterName + 4, eax
 	__asm mov eax, [edi + 12]
 	__asm mov characterName + 8, eax
-	__asm mov updated, 1
 
 	__asm mov eax, regs.eax
 	__asm jmp CHARACTER_CHANGE.next
 }
 
-__declspec(naked) void MapNameChangeHandler() {
+__declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
+	__asm mov mapID, eax
 
-
-	__asm jmp MAP_NAME_CHANGE.next
+	__asm jmp MAP_CHANGE.next
 }
 
 __declspec(naked) void AreaNameChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov regs.ebx, ebx
 
+	__asm mov ebx, [eax - 4]
+	__asm mov areaName.length, ebx
+	__asm mov areaName.address, eax
+	// **update string**
 
-
+	__asm mov ebx, regs.ebx
 	__asm jmp AREA_NAME_CHANGE.next
+}
+
+__declspec(naked) void MapNameChangeHandler() {
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov regs.ebx, ebx
+
+	__asm mov ebx, [eax - 4]
+	__asm mov mapName.length, ebx
+	__asm mov mapName.address, eax
+	// **update string**
+	__asm mov updated, 1 
+
+	__asm mov ebx, regs.ebx
+	__asm jmp MAP_NAME_CHANGE.next
 }
 
 void StartTools() {
@@ -87,6 +97,7 @@ void StartTools() {
 	DWORD oldMapID = -1;
 	DWORD oldChannel = -1;
 	character_name oldCharacterName = {};
+	std::string oldAreaNameStr = "";
 
 	while (true) {
 		Sleep(1000);
@@ -94,7 +105,11 @@ void StartTools() {
 			updated = 0;
 			if (mapID != oldMapID) {
 				oldMapID = mapID;
-				printf("Map changed to %u\n", int(mapID));
+				printf("Map changed to %s (%u)\n", mapName.str.c_str(), int(mapID));
+				if (areaName.str.compare(oldAreaNameStr)) {
+					oldAreaNameStr = areaName.str;
+					printf("Area changed to %s\n", areaName.str.c_str());
+				}
 			}
 			if (channel != oldChannel) {
 				oldChannel = channel;
