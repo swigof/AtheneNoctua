@@ -19,7 +19,6 @@ struct registers {
 	DWORD edi;
 	DWORD ebp;
 	DWORD esp;
-	DWORD eip;
 };
 
 union character_name{
