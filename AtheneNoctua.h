@@ -7,18 +7,12 @@ union charactername {
 	BYTE bytes[12];
 };
 
-struct memorystring {
-	char* address;
-	DWORD length;
-	std::string str;
-};
-
 struct playerdata {
 	charactername characterName;
 	DWORD mapID = -1;
 	DWORD channel = -1;
-	memorystring mapName;
-	memorystring areaName;
+	std::string mapName;
+	std::string areaName;
 	bool isOnline = false;
 	bool inCashShop = false;
 	struct {
