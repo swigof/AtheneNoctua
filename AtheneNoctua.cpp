@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <Windows.h>
+#include <time.h>
 #include "AtheneNoctua.h"
 #include "AssemblyHook.h"
 
-// add online/offline/cs flag
-bool updated = 0;
-playerdata memoryPlayerData;
-//check for changes in assembly handlers instead of externally, could hurt performance
+playerdata playerData;
 
 struct {
 	DWORD eax;
@@ -45,32 +43,52 @@ __declspec(naked) void RestoreRegisters() {
 
 __declspec(naked) void ChannelChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm pushf
+	__asm call SaveRegisters
 
-	__asm mov memoryPlayerData.channel, eax
+	if (playerData.channel != regs.eax) {
+		playerData.channel = regs.eax;
+		playerData.changeFlags.channel = true;
+		time(&playerData.timestamps.channel);
+		printf("Channel changed to %u\n", int(playerData.channel));
+	}
 
+	__asm call RestoreRegisters
+	__asm popf
 	__asm jmp CHANNEL_CHANGE.next
 }
 
 __declspec(naked) void CharacterChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
-	__asm mov regs.eax, eax
+	__asm pushf
+	__asm call SaveRegisters
 
-	__asm mov eax, [edi + 4]
-	__asm mov memoryPlayerData.characterName, eax
-	__asm mov eax, [edi + 8]
-	__asm mov memoryPlayerData.characterName + 4, eax
-	__asm mov eax, [edi + 12]
-	__asm mov memoryPlayerData.characterName + 8, eax
+	if (memcmp(&playerData.characterName, (DWORD*)regs.edi + 1, 12)) {
+		memcpy(&playerData.characterName, (DWORD*)regs.edi + 1, 12);
+		playerData.changeFlags.characterName = true;
+		time(&playerData.timestamps.characterName);
+		printf("Character name changed to %.12s\n", playerData.characterName.bytes);	
+	}
 
-	__asm mov eax, regs.eax
+	__asm call RestoreRegisters
+	__asm popf
 	__asm jmp CHARACTER_CHANGE.next
 }
 
 __declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm pushf
+	__asm call SaveRegisters
 
-	__asm mov memoryPlayerData.mapID, eax
+	if (playerData.mapID != regs.eax) {
+		playerData.mapID = regs.eax;
+		playerData.changeFlags.mapID = true;
+		time(&playerData.timestamps.mapID);
+		printf("Map ID changed to %u\n", int(playerData.mapID));
+	}
 
+	__asm call RestoreRegisters
+	__asm popf
 	__asm jmp MAP_CHANGE.next
 }
 
@@ -79,10 +97,12 @@ __declspec(naked) void AreaNameChangeHandler() {
 	__asm pushf
 	__asm call SaveRegisters
 
-	__asm mov ebx, [eax - 4]
-	__asm mov memoryPlayerData.areaName.length, ebx
-	__asm mov memoryPlayerData.areaName.address, eax
-	memoryPlayerData.areaName.str.assign(memoryPlayerData.areaName.address, memoryPlayerData.areaName.length);
+	if (playerData.areaName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
+		playerData.areaName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
+		playerData.changeFlags.areaName = true;
+		time(&playerData.timestamps.areaName);
+		printf("Area name changed to %s\n", playerData.areaName.c_str());
+	}
 
 	__asm call RestoreRegisters
 	__asm popf
@@ -94,11 +114,12 @@ __declspec(naked) void MapNameChangeHandler() {
 	__asm pushf
 	__asm call SaveRegisters
 
-	__asm mov ebx, [eax - 4]
-	__asm mov memoryPlayerData.mapName.length, ebx
-	__asm mov memoryPlayerData.mapName.address, eax
-	memoryPlayerData.mapName.str.assign(memoryPlayerData.mapName.address, memoryPlayerData.mapName.length);
-	__asm mov updated, 1
+	if (playerData.mapName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
+		playerData.mapName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
+		playerData.changeFlags.mapName = true;
+		time(&playerData.timestamps.mapName);
+		printf("Map name changed to %s\n", playerData.mapName.c_str());
+	}
 
 	__asm call RestoreRegisters
 	__asm popf
@@ -127,39 +148,11 @@ void StartTools() {
 	AssemblyHook areaNameChangeHook = AssemblyHook(AreaNameChangeHandler, AREA_NAME_CHANGE);
 	areaNameChangeHook.Attach();
 
-	playerdata stablePlayerData;
 	while (true) {
-		Sleep(1000);
-		// update delta
-		if (updated) {
-			updated = 0;
-			// extract below behaviors to functions
-			if (memoryPlayerData.mapID != stablePlayerData.mapID) {
-				stablePlayerData.mapID = memoryPlayerData.mapID;
-				stablePlayerData.changeFlags.mapID = true;
-				if (memoryPlayerData.mapName.str.compare(stablePlayerData.mapName.str)) {
-					stablePlayerData.mapName = memoryPlayerData.mapName;
-					stablePlayerData.changeFlags.mapName = true;
-				}
-				if (memoryPlayerData.areaName.str.compare(stablePlayerData.areaName.str)) {
-					stablePlayerData.areaName = memoryPlayerData.areaName;
-					stablePlayerData.changeFlags.areaName = true;
-					printf("Area changed to %s\n", stablePlayerData.areaName.str.c_str());
-				}
-				printf("Map changed to %s (%u)\n", stablePlayerData.mapName.str.c_str(), int(stablePlayerData.mapID));
-			}
-			if (memoryPlayerData.channel != stablePlayerData.channel) {
-				stablePlayerData.channel = memoryPlayerData.channel;
-				printf("Channel changed to %u\n", int(stablePlayerData.channel));
-			}
-			if (memcmp(&memoryPlayerData.characterName, &stablePlayerData.characterName, 12)) {
-				stablePlayerData.characterName = memoryPlayerData.characterName;
-				printf("Character name changed to %.12s\n", stablePlayerData.characterName.bytes);
-			}
-		}
-		// else if delta 1 minute, only send changed
-		// or send ping if nothing changed but still online
-		// use oldPlayer 
+		Sleep(60000);
+		// only send changed or send ping if nothing changed but still online
+		// use lock of somekind to ensure not actively updating anything? 
+		// or timer to wait out updates. concerns with channel to map name being grouped. locked together?
 	}
 
 	printf("Exiting\n");
