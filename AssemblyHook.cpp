@@ -1,12 +1,12 @@
 #include "AssemblyHook.h"
 #include <stdio.h>
 
-AssemblyHook::AssemblyHook(DWORD instructionAddress, void* handler, DWORD jumpbackAddress, DWORD instructionSize, char* instructionBytes) {
-	this->instructionAddress = instructionAddress;
+AssemblyHook::AssemblyHook(void* handler, hookpoint hookPoint) {
+	this->instructionAddress = hookPoint.address;
 	this->handlerAddress = (DWORD)handler;
-	this->jumpbackAddress = jumpbackAddress;
-	this->instructionSize = instructionSize;
-	this->instructionBytes = instructionBytes;
+	this->jumpbackAddress = hookPoint.next;
+	this->instructionSize = hookPoint.size;
+	this->instructionBytes = hookPoint.bytes;
 	this->attached = false;
 	this->WriteInstructionToHandler();
 }

@@ -1,14 +1,23 @@
 #include <stdio.h>
+#include <Windows.h>
 #include "AtheneNoctua.h"
 #include "AssemblyHook.h"
 
-registers regs = {};
+// add online/offline/cs flag
 bool updated = 0;
-DWORD mapID = -1;
-DWORD channel = -1;
-character_name characterName = {};
-memory_string mapName = {};
-memory_string areaName = {};
+playerdata memoryPlayerData;
+//check for changes in assembly handlers instead of externally, could hurt performance
+
+struct {
+	DWORD eax;
+	DWORD ebx;
+	DWORD ecx;
+	DWORD edx;
+	DWORD esi;
+	DWORD edi;
+	DWORD ebp;
+	DWORD esp;
+} regs;
 
 __declspec(naked) void SaveRegisters(){
 	__asm mov regs.eax, eax
@@ -37,7 +46,7 @@ __declspec(naked) void RestoreRegisters() {
 __declspec(naked) void ChannelChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
-	__asm mov channel, eax
+	__asm mov memoryPlayerData.channel, eax
 
 	__asm jmp CHANNEL_CHANGE.next
 }
@@ -47,11 +56,11 @@ __declspec(naked) void CharacterChangeHandler() {
 	__asm mov regs.eax, eax
 
 	__asm mov eax, [edi + 4]
-	__asm mov characterName, eax
+	__asm mov memoryPlayerData.characterName, eax
 	__asm mov eax, [edi + 8]
-	__asm mov characterName + 4, eax
+	__asm mov memoryPlayerData.characterName + 4, eax
 	__asm mov eax, [edi + 12]
-	__asm mov characterName + 8, eax
+	__asm mov memoryPlayerData.characterName + 8, eax
 
 	__asm mov eax, regs.eax
 	__asm jmp CHARACTER_CHANGE.next
@@ -60,7 +69,7 @@ __declspec(naked) void CharacterChangeHandler() {
 __declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
 
-	__asm mov mapID, eax
+	__asm mov memoryPlayerData.mapID, eax
 
 	__asm jmp MAP_CHANGE.next
 }
@@ -71,9 +80,9 @@ __declspec(naked) void AreaNameChangeHandler() {
 	__asm call SaveRegisters
 
 	__asm mov ebx, [eax - 4]
-	__asm mov areaName.length, ebx
-	__asm mov areaName.address, eax
-	areaName.str.assign(areaName.address, areaName.length);
+	__asm mov memoryPlayerData.areaName.length, ebx
+	__asm mov memoryPlayerData.areaName.address, eax
+	memoryPlayerData.areaName.str.assign(memoryPlayerData.areaName.address, memoryPlayerData.areaName.length);
 
 	__asm call RestoreRegisters
 	__asm popf
@@ -86,9 +95,9 @@ __declspec(naked) void MapNameChangeHandler() {
 	__asm call SaveRegisters
 
 	__asm mov ebx, [eax - 4]
-	__asm mov mapName.length, ebx
-	__asm mov mapName.address, eax
-	mapName.str.assign(mapName.address, mapName.length);
+	__asm mov memoryPlayerData.mapName.length, ebx
+	__asm mov memoryPlayerData.mapName.address, eax
+	memoryPlayerData.mapName.str.assign(memoryPlayerData.mapName.address, memoryPlayerData.mapName.length);
 	__asm mov updated, 1
 
 	__asm call RestoreRegisters
@@ -107,47 +116,50 @@ void StartTools() {
 
 	printf("DLL loaded\n");
 
-	AssemblyHook mapChangeHook = AssemblyHook(MAP_CHANGE.address, MapChangeHandler, MAP_CHANGE.next, MAP_CHANGE.size, MAP_CHANGE.bytes);
+	AssemblyHook mapChangeHook = AssemblyHook(MapChangeHandler, MAP_CHANGE);
 	mapChangeHook.Attach();
-
-	AssemblyHook channelChangeHook = AssemblyHook(CHANNEL_CHANGE.address, ChannelChangeHandler, CHANNEL_CHANGE.next, CHANNEL_CHANGE.size, CHANNEL_CHANGE.bytes);
+	AssemblyHook channelChangeHook = AssemblyHook(ChannelChangeHandler, CHANNEL_CHANGE);
 	channelChangeHook.Attach();
-
-	AssemblyHook characterChangeHook = AssemblyHook(CHARACTER_CHANGE.address, CharacterChangeHandler, CHARACTER_CHANGE.next, CHARACTER_CHANGE.size, CHARACTER_CHANGE.bytes);
+	AssemblyHook characterChangeHook = AssemblyHook(CharacterChangeHandler, CHARACTER_CHANGE);
 	characterChangeHook.Attach();
-
-	AssemblyHook mapNameChangeHook = AssemblyHook(MAP_NAME_CHANGE.address, MapNameChangeHandler, MAP_NAME_CHANGE.next, MAP_NAME_CHANGE.size, MAP_NAME_CHANGE.bytes);
+	AssemblyHook mapNameChangeHook = AssemblyHook(MapNameChangeHandler, MAP_NAME_CHANGE);
 	mapNameChangeHook.Attach();
-
-	AssemblyHook areaNameChangeHook = AssemblyHook(AREA_NAME_CHANGE.address, AreaNameChangeHandler, AREA_NAME_CHANGE.next, AREA_NAME_CHANGE.size, AREA_NAME_CHANGE.bytes);
+	AssemblyHook areaNameChangeHook = AssemblyHook(AreaNameChangeHandler, AREA_NAME_CHANGE);
 	areaNameChangeHook.Attach();
 
-	DWORD oldMapID = -1;
-	DWORD oldChannel = -1;
-	character_name oldCharacterName = {};
-	std::string oldAreaNameStr = "";
-
+	playerdata stablePlayerData;
 	while (true) {
 		Sleep(1000);
+		// update delta
 		if (updated) {
 			updated = 0;
-			if (mapID != oldMapID) {
-				oldMapID = mapID;
-				printf("Map changed to %s (%u)\n", mapName.str.c_str(), int(mapID));
-				if (areaName.str.compare(oldAreaNameStr)) {
-					oldAreaNameStr = areaName.str;
-					printf("Area changed to %s\n", areaName.str.c_str());
+			// extract below behaviors to functions
+			if (memoryPlayerData.mapID != stablePlayerData.mapID) {
+				stablePlayerData.mapID = memoryPlayerData.mapID;
+				stablePlayerData.changeFlags.mapID = true;
+				if (memoryPlayerData.mapName.str.compare(stablePlayerData.mapName.str)) {
+					stablePlayerData.mapName = memoryPlayerData.mapName;
+					stablePlayerData.changeFlags.mapName = true;
 				}
+				if (memoryPlayerData.areaName.str.compare(stablePlayerData.areaName.str)) {
+					stablePlayerData.areaName = memoryPlayerData.areaName;
+					stablePlayerData.changeFlags.areaName = true;
+					printf("Area changed to %s\n", stablePlayerData.areaName.str.c_str());
+				}
+				printf("Map changed to %s (%u)\n", stablePlayerData.mapName.str.c_str(), int(stablePlayerData.mapID));
 			}
-			if (channel != oldChannel) {
-				oldChannel = channel;
-				printf("Channel changed to %u\n", int(channel));
+			if (memoryPlayerData.channel != stablePlayerData.channel) {
+				stablePlayerData.channel = memoryPlayerData.channel;
+				printf("Channel changed to %u\n", int(stablePlayerData.channel));
 			}
-			if (memcmp(&characterName, &oldCharacterName, 12)) {
-				oldCharacterName = characterName;
-				printf("Character name changed to %.12s\n", characterName.bytes);
+			if (memcmp(&memoryPlayerData.characterName, &stablePlayerData.characterName, 12)) {
+				stablePlayerData.characterName = memoryPlayerData.characterName;
+				printf("Character name changed to %.12s\n", stablePlayerData.characterName.bytes);
 			}
 		}
+		// else if delta 1 minute, only send changed
+		// or send ping if nothing changed but still online
+		// use oldPlayer 
 	}
 
 	printf("Exiting\n");
