@@ -126,6 +126,40 @@ __declspec(naked) void MapNameChangeHandler() {
 	__asm jmp MAP_NAME_CHANGE.next
 }
 
+__declspec(naked) void OnMapHandler() {
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm pushf
+	__asm call SaveRegisters
+
+	if (!playerData.onMap) {
+		playerData.onMap = true;
+		playerData.changeFlags.onMap = true;
+		time(&playerData.timestamps.onMap);
+		printf("On map\n");
+	}
+
+	__asm call RestoreRegisters
+	__asm popf
+	__asm jmp ON_MAP.next
+}
+
+__declspec(naked) void OffMapHandler() {
+	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm pushf
+	__asm call SaveRegisters
+
+	if (playerData.onMap) {
+		playerData.onMap = false;
+		playerData.changeFlags.onMap = true;
+		time(&playerData.timestamps.onMap);
+		printf("Off map\n");
+	}
+
+	__asm call RestoreRegisters
+	__asm popf
+	__asm jmp OFF_MAP.next
+}
+
 void StartTools() {
 #ifdef _DEBUG 
 	if (AllocConsole()) {
@@ -147,6 +181,10 @@ void StartTools() {
 	mapNameChangeHook.Attach();
 	AssemblyHook areaNameChangeHook = AssemblyHook(AreaNameChangeHandler, AREA_NAME_CHANGE);
 	areaNameChangeHook.Attach();
+	AssemblyHook onMapHook = AssemblyHook(OnMapHandler, ON_MAP);
+	onMapHook.Attach();
+	AssemblyHook offMapHook = AssemblyHook(OffMapHandler, OFF_MAP);
+	offMapHook.Attach();
 
 	while (true) {
 		Sleep(60000);
