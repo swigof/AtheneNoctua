@@ -33,6 +33,7 @@
     <ClInclude Include="d3d8\dxsdk\d3d8caps.h" />
     <ClInclude Include="d3d8\dxsdk\d3d8types.h" />
     <ClInclude Include="AtheneNoctua.h" />
+    <ClInclude Include="httplib\httplib.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

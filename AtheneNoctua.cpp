@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include "httplib/httplib.h"
 #include <Windows.h>
-#include <time.h>
 #include "AtheneNoctua.h"
 #include "AssemblyHook.h"
 
 playerdata playerData;
+bool handling = false;
 
 struct {
 	DWORD eax;
@@ -43,120 +44,127 @@ __declspec(naked) void RestoreRegisters() {
 
 __declspec(naked) void ChannelChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (playerData.channel != regs.eax) {
 		playerData.channel = regs.eax;
 		playerData.changeFlags.channel = true;
-		time(&playerData.timestamps.channel);
 		printf("Channel changed to %u\n", int(playerData.channel));
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp CHANNEL_CHANGE.next
 }
 
 __declspec(naked) void CharacterChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (memcmp(&playerData.characterName, (DWORD*)regs.edi + 1, 12)) {
 		memcpy(&playerData.characterName, (DWORD*)regs.edi + 1, 12);
 		playerData.changeFlags.characterName = true;
-		time(&playerData.timestamps.characterName);
 		printf("Character name changed to %.12s\n", playerData.characterName.bytes);	
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp CHARACTER_CHANGE.next
 }
 
 __declspec(naked) void MapChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (playerData.mapID != regs.eax) {
 		playerData.mapID = regs.eax;
 		playerData.changeFlags.mapID = true;
-		time(&playerData.timestamps.mapID);
 		printf("Map ID changed to %u\n", int(playerData.mapID));
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp MAP_CHANGE.next
 }
 
 __declspec(naked) void AreaNameChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (playerData.areaName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.areaName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.areaName = true;
-		time(&playerData.timestamps.areaName);
 		printf("Area name changed to %s\n", playerData.areaName.c_str());
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp AREA_NAME_CHANGE.next
 }
 
 __declspec(naked) void MapNameChangeHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (playerData.mapName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.mapName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.mapName = true;
-		time(&playerData.timestamps.mapName);
 		printf("Map name changed to %s\n", playerData.mapName.c_str());
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp MAP_NAME_CHANGE.next
 }
 
 __declspec(naked) void OnMapHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (!playerData.onMap) {
 		playerData.onMap = true;
 		playerData.changeFlags.onMap = true;
-		time(&playerData.timestamps.onMap);
 		printf("On map\n");
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp ON_MAP.next
 }
 
 __declspec(naked) void OffMapHandler() {
 	__asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop __asm nop
+	__asm mov handling, 1
 	__asm pushf
 	__asm call SaveRegisters
 
 	if (playerData.onMap) {
 		playerData.onMap = false;
 		playerData.changeFlags.onMap = true;
-		time(&playerData.timestamps.onMap);
 		printf("Off map\n");
 	}
 
 	__asm call RestoreRegisters
 	__asm popf
+	__asm mov handling, 0
 	__asm jmp OFF_MAP.next
 }
 
@@ -186,11 +194,46 @@ void StartTools() {
 	AssemblyHook offMapHook = AssemblyHook(OffMapHandler, OFF_MAP);
 	offMapHook.Attach();
 
+	printf("Hooks attached\n");
+
+	httplib::Client cli(SERVER);
+
 	while (true) {
 		Sleep(60000);
-		// only send changed or send ping if nothing changed but still online
-		// use lock of somekind to ensure not actively updating anything? 
-		// or timer to wait out updates. concerns with channel to map name being grouped. locked together?
+
+		while (handling) {
+			Sleep(500);
+		}
+
+		httplib::Params params;
+		// session id?
+
+		if (playerData.changeFlags.areaName) {
+			params.emplace("areaName", playerData.areaName);
+			playerData.changeFlags.areaName = false;
+		}
+		if (playerData.changeFlags.channel) {
+			params.emplace("channel", playerData.channel);
+			playerData.changeFlags.channel = false;
+		}
+		if (playerData.changeFlags.characterName) {
+			params.emplace("characterName", playerData.characterName);
+			playerData.changeFlags.characterName = false;
+		}
+		if (playerData.changeFlags.mapID) {
+			params.emplace("mapID", playerData.mapID);
+			playerData.changeFlags.mapID = false;
+		}
+		if (playerData.changeFlags.mapName) {
+			params.emplace("mapName", playerData.mapName);
+			playerData.changeFlags.mapName = false;
+		}
+		if (playerData.changeFlags.onMap) {
+			params.emplace("onMap", playerData.onMap);
+			playerData.changeFlags.onMap = false;
+		}
+
+		httplib::Result res = cli.Post("/teleport", params);
 	}
 
 	printf("Exiting\n");
