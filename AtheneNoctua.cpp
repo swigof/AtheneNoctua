@@ -18,7 +18,7 @@ struct {
 	DWORD esp;
 } regs;
 
-__declspec(naked) void SaveRegisters(){
+__declspec(naked) void SaveRegisters() {
 	__asm mov regs.eax, eax
 	__asm mov regs.ebx, ebx
 	__asm mov regs.ecx, ecx
