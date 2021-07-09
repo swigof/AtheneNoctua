@@ -14,6 +14,7 @@ struct playerdata {
 	std::string mapName;
 	std::string areaName;
 	bool onMap = false;
+	time_t lastChangeTime = 0;
 	struct {
 		bool characterName = false;
 		bool mapID = false;

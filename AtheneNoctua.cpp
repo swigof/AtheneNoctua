@@ -51,6 +51,7 @@ __declspec(naked) void ChannelChangeHandler() {
 	if (playerData.channel != regs.eax) {
 		playerData.channel = regs.eax;
 		playerData.changeFlags.channel = true;
+		time(&playerData.lastChangeTime);
 		printf("Channel changed to %u\n", int(playerData.channel));
 	}
 
@@ -69,6 +70,7 @@ __declspec(naked) void CharacterChangeHandler() {
 	if (memcmp(&playerData.characterName, (DWORD*)regs.edi + 1, 12)) {
 		memcpy(&playerData.characterName, (DWORD*)regs.edi + 1, 12);
 		playerData.changeFlags.characterName = true;
+		time(&playerData.lastChangeTime);
 		printf("Character name changed to %.12s\n", playerData.characterName.bytes);	
 	}
 
@@ -87,6 +89,7 @@ __declspec(naked) void MapChangeHandler() {
 	if (playerData.mapID != regs.eax) {
 		playerData.mapID = regs.eax;
 		playerData.changeFlags.mapID = true;
+		time(&playerData.lastChangeTime);
 		printf("Map ID changed to %u\n", int(playerData.mapID));
 	}
 
@@ -105,6 +108,7 @@ __declspec(naked) void AreaNameChangeHandler() {
 	if (playerData.areaName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.areaName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.areaName = true;
+		time(&playerData.lastChangeTime);
 		printf("Area name changed to %s\n", playerData.areaName.c_str());
 	}
 
@@ -123,6 +127,7 @@ __declspec(naked) void MapNameChangeHandler() {
 	if (playerData.mapName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.mapName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.mapName = true;
+		time(&playerData.lastChangeTime);
 		printf("Map name changed to %s\n", playerData.mapName.c_str());
 	}
 
@@ -141,6 +146,7 @@ __declspec(naked) void OnMapHandler() {
 	if (!playerData.onMap) {
 		playerData.onMap = true;
 		playerData.changeFlags.onMap = true;
+		time(&playerData.lastChangeTime);
 		printf("On map\n");
 	}
 
@@ -159,6 +165,7 @@ __declspec(naked) void OffMapHandler() {
 	if (playerData.onMap) {
 		playerData.onMap = false;
 		playerData.changeFlags.onMap = true;
+		time(&playerData.lastChangeTime);
 		printf("Off map\n");
 	}
 
@@ -197,6 +204,7 @@ void StartTools() {
 	printf("Hooks attached\n");
 
 	httplib::Client cli(SERVER);
+	DWORD dbID = 0;
 
 	while (true) {
 		Sleep(60000);
@@ -206,34 +214,45 @@ void StartTools() {
 		}
 
 		httplib::Params params;
-		// session id?
 
 		if (playerData.changeFlags.areaName) {
 			params.emplace("areaName", playerData.areaName);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.areaName = false;
 		}
 		if (playerData.changeFlags.channel) {
 			params.emplace("channel", playerData.channel);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.channel = false;
 		}
 		if (playerData.changeFlags.characterName) {
 			params.emplace("characterName", playerData.characterName);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.characterName = false;
 		}
 		if (playerData.changeFlags.mapID) {
 			params.emplace("mapID", playerData.mapID);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.mapID = false;
 		}
 		if (playerData.changeFlags.mapName) {
 			params.emplace("mapName", playerData.mapName);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.mapName = false;
 		}
 		if (playerData.changeFlags.onMap) {
 			params.emplace("onMap", playerData.onMap);
+			params.emplace("lastChange", playerData.lastChangeTime);
 			playerData.changeFlags.onMap = false;
 		}
 
-		httplib::Result res = cli.Post("/teleport", params);
+		if (dbID == 0) {
+			httplib::Result res = cli.Post("/teleport", params);
+			// dbID = res...
+		}
+		else {
+			// httplib::Result res = cli.Put("/teleport/"+ID, params);
+		}
 	}
 
 	printf("Exiting\n");
