@@ -26,28 +26,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="d3d8\d3d8.def">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="d3d8\dxsdk\d3d8.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="d3d8\dxsdk\d3d8caps.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="d3d8\dxsdk\d3d8types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AtheneNoctua.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AssemblyHook.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="httplib\httplib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

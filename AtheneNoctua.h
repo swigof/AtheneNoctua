@@ -2,6 +2,8 @@
 #include <string>
 #include "AssemblyHook.h"
 
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+
 union charactername {
 	DWORD dwords[3];
 	BYTE bytes[12];
@@ -33,10 +35,7 @@ constexpr hookpoint MAP_CHANGE = { 0x006DBC40, 10, 0x006DBC4A, "\xC7\x87\x38\x06
 constexpr hookpoint AREA_NAME_CHANGE = { 0x006D94C6, 6, 0x006D94CC, "\x3B\xC3\xC6\x45\xFC\x0A" }; 
 constexpr hookpoint MAP_NAME_CHANGE = { 0x006D9529, 6, 0x006D952F, "\x3B\xC3\xC6\x45\xFC\x0F" };
 
-#ifdef _DEBUG
-constexpr char* SERVER = "localhost";
-#else
 constexpr char* SERVER = "";
-#endif
+constexpr char* ENDPOINT = "";
 
 void StartTools();

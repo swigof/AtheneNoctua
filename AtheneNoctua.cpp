@@ -210,47 +210,53 @@ void StartTools() {
 		Sleep(60000);
 
 		while (handling) {
+			printf("Waiting for handler\n");
 			Sleep(500);
 		}
+
+		printf("Setting request params\n");
 
 		httplib::Params params;
 
 		if (playerData.changeFlags.areaName) {
 			params.emplace("areaName", playerData.areaName);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.areaName = false;
 		}
 		if (playerData.changeFlags.channel) {
-			params.emplace("channel", playerData.channel);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("channel", std::to_string(playerData.channel));
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.channel = false;
 		}
 		if (playerData.changeFlags.characterName) {
-			params.emplace("characterName", playerData.characterName);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("characterName", std::string((char*)playerData.characterName.bytes, 12));
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.characterName = false;
 		}
 		if (playerData.changeFlags.mapID) {
-			params.emplace("mapID", playerData.mapID);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("mapID", std::to_string(playerData.mapID));
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.mapID = false;
 		}
 		if (playerData.changeFlags.mapName) {
 			params.emplace("mapName", playerData.mapName);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.mapName = false;
 		}
 		if (playerData.changeFlags.onMap) {
-			params.emplace("onMap", playerData.onMap);
-			params.emplace("lastChange", playerData.lastChangeTime);
+			params.emplace("onMap", std::to_string(playerData.onMap));
+			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
 			playerData.changeFlags.onMap = false;
 		}
 
 		if (dbID == 0) {
-			httplib::Result res = cli.Post("/teleport", params);
-			// dbID = res...
+			printf("Sending entry create request\n");
+			if (httplib::Result res = cli.Post(ENDPOINT, params)) {
+				printf("%u", res->status);
+			}			
 		}
 		else {
+			printf("Sending entry update request\n");
 			// httplib::Result res = cli.Put("/teleport/"+ID, params);
 		}
 	}
