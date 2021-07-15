@@ -1,25 +1,12 @@
 #define CURL_STATICLIB
 
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
+#include <wininet.h>
 #include <time.h>
-#include "curl/curl.h"
 #include "AtheneNoctua.h"
 #include "AssemblyHook.h"
 #include <map>
-#include <thread>
-
-#ifdef _DEBUG
-#pragma comment (lib, "curl/libcurl_a_debug.lib")
-#else
-#pragma comment (lib, "curl/libcurl_a.lib")
-#endif
-
-#pragma comment(lib, "Normaliz.lib")
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "Wldap32.lib")
-#pragma comment(lib, "Crypt32.lib")
-#pragma comment(lib, "advapi32.lib")
 
 playerdata playerData;
 bool handling = false;
@@ -193,46 +180,7 @@ __declspec(naked) void OffMapHandler() {
 }
 
 void SendDBUpdate(std::string params_str) {
-	CURL* curl;
-	CURLcode res;
-
-	//request parameters seem to get replaced with main processes communications.
-	//IP appears as one thing according to curl but network traffic indicates request is being sent to game server
-	curl = curl_easy_init();
-	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_URL, "http://www.httpvshttps.com/");
-
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 300l);
-		curl_easy_setopt(curl, CURLOPT_SERVER_RESPONSE_TIMEOUT, 300l);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 300l);
-
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1l);
-		curl_easy_setopt(curl, CURLOPT_STDERR, stdout);
-		curl_version_info_data* ver = curl_version_info(CURLVERSION_NOW);
-		printf("%s\n", curl_version());
-		if (!(ver->features & CURL_VERSION_ASYNCHDNS))
-			printf("synchronous\n");
-		else if (!ver->age || ver->ares_num)
-			printf("ares\n");
-		else
-			printf("threaded\n");
-
-		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		//curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		//curl_easy_setopt(curl, CURLOPT_POSTFIELDS, params_str.c_str());
-		res = curl_easy_perform(curl);
-		if (res != CURLE_OK) {
-			printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-			res = curl_easy_perform(curl);
-			if (res != CURLE_OK) {
-				printf("failed again\n");
-			}
-		}
-		else
-			printf("curl_easy_perform() success\n");
-		curl_easy_cleanup(curl);
-	}
+	
 }
 
 std::string buildParamsString(std::map<std::string, std::string> params) {
@@ -286,8 +234,6 @@ void StartTools() {
 	offMapHook.Attach();
 
 	printf("Hooks attached\n");
-
-	curl_global_init(CURL_GLOBAL_ALL);//dangerous?
 
 	printf("CURL initialized\n");
 
@@ -344,6 +290,5 @@ void StartTools() {
 		Sleep(60000);
 	}
 
-	curl_global_cleanup();
 	printf("Exiting\n");
 }
