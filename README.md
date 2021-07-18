@@ -1,5 +1,4 @@
 # TODOS
-* google sheet server integration
+* google sheet trigger scripting
 * world tracking support
-* config file for different game/server setting constants
 * client version hash checking and/or instruction byte checking

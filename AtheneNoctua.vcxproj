@@ -29,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="AssemblyHook.h" />
     <ClInclude Include="AtheneNoctua.h" />
+    <ClInclude Include="ConfigurationConstants.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
