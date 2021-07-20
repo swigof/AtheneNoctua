@@ -1,4 +1,3 @@
-#include <windows.h>
 #include <d3d8.h>
 #include <thread>
 #include "../AtheneNoctua.h"
@@ -19,6 +18,7 @@ __declspec(naked) void _Direct3DCreate8() { _asm { jmp[d3d8.Direct3DCreate8] } }
 __declspec(naked) void _ValidatePixelShader() { _asm { jmp[d3d8.ValidatePixelShader] } }
 __declspec(naked) void _ValidateVertexShader() { _asm { jmp[d3d8.ValidateVertexShader] } }
 
+// Application entry point
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     char path[MAX_PATH];

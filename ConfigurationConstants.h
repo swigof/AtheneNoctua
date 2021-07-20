@@ -1,5 +1,5 @@
 #pragma once
-#include "AssemblyHook.h"
+#include "AssemblyInjection/AssemblyHook.h"
 
 constexpr hookpoint OFF_MAP = { 0x00739183, 5, 0x00739188, "\xF6\x44\x24\x08\x01" };
 constexpr hookpoint ON_MAP = { 0x0073A073, 7, 0x0073A07A, "\x83\x4D\xFC\xFF\x8D\x45\xD4" };

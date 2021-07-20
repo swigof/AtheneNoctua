@@ -21,7 +21,10 @@
     <ClCompile Include="d3d8\dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssemblyHook.cpp">
+    <ClCompile Include="AssemblyInjection\AssemblyHandlers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AssemblyInjection\AssemblyHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,10 +35,13 @@
     <ClInclude Include="AtheneNoctua.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AssemblyHook.h">
+    <ClInclude Include="ConfigurationConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ConfigurationConstants.h">
+    <ClInclude Include="AssemblyInjection\AssemblyHandlers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssemblyInjection\AssemblyHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

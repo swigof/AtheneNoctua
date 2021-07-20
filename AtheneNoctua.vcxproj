@@ -19,7 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AssemblyHook.cpp" />
+    <ClCompile Include="AssemblyInjection\AssemblyHandlers.cpp" />
+    <ClCompile Include="AssemblyInjection\AssemblyHook.cpp" />
     <ClCompile Include="d3d8\dllmain.cpp" />
     <ClCompile Include="AtheneNoctua.cpp" />
   </ItemGroup>
@@ -27,7 +28,8 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AssemblyHook.h" />
+    <ClInclude Include="AssemblyInjection\AssemblyHandlers.h" />
+    <ClInclude Include="AssemblyInjection\AssemblyHook.h" />
     <ClInclude Include="AtheneNoctua.h" />
     <ClInclude Include="ConfigurationConstants.h" />
   </ItemGroup>
