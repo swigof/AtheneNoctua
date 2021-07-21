@@ -15,11 +15,15 @@ AssemblyHook::~AssemblyHook() {
 	this->Detach();
 }
 
-void AssemblyHook::Attach() {
+bool AssemblyHook::Attach() {
 	if (!attached) {
 		if (this->instructionSize < 5) {
-			printf("Failed to hook at %0x08x: instruction size of %u too small\n", this->instructionAddress, this->instructionSize);
-			return;
+			printf("Failed to attach at 0x%08x: instruction size of %u too small\n", this->instructionAddress, this->instructionSize);
+			return false;
+		}
+		if (memcmp((void*)this->instructionAddress, this->instructionBytes, this->instructionSize)) {
+			printf("Failed to attach at 0x%08x: instruction bytes do not match\n", this->instructionAddress);
+			return false;
 		}
 		DWORD dwOldProtect;
 		VirtualProtect((void*)this->instructionAddress, this->instructionSize, PAGE_READWRITE, &dwOldProtect);
@@ -36,6 +40,11 @@ void AssemblyHook::Attach() {
 		VirtualProtect((void*)this->instructionAddress, this->instructionSize, dwOldProtect, &dwOldProtect);
 		FlushInstructionCache(GetCurrentProcess(), (void*)this->instructionAddress, this->instructionSize);
 		this->attached = true;
+		return true;
+	}
+	else {
+		printf("Failed to attach at 0x%08x: already attached\n", this->instructionAddress);
+		return false;
 	}
 }
 

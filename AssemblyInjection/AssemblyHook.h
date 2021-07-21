@@ -20,7 +20,7 @@ private:
 public:
 	AssemblyHook(void* handler, hookpoint hookPoint);
 	~AssemblyHook();
-	void Attach();
+	bool Attach();
 	void Detach();
 	void WriteInstructionToHandler();
 };
