@@ -10,7 +10,7 @@
 extern playerdata playerData;
 extern bool handling;
 
-// Main function of the application.
+// Main function of the thread.
 void StartTools() {
 	// setup print outs
 #ifdef _DEBUG 
@@ -24,7 +24,7 @@ void StartTools() {
 	printf("DLL loaded\n");
 
 	if (!CheckSHA1()) {
-		printf("SHA1 bad\nExiting\n");
+		printf("SHA1 bad\nThread exiting\n");
 		return;
 	}
 	printf("SHA1 good\n");
@@ -39,7 +39,7 @@ void StartTools() {
 	AssemblyHook offMapHook = AssemblyHook(OffMapHandler, OFF_MAP);
 	if (!mapChangeHook.Attach() || !channelChangeHook.Attach() || !characterChangeHook.Attach() ||
 		!mapNameChangeHook.Attach() || !areaNameChangeHook.Attach() || !onMapHook.Attach() || !offMapHook.Attach()) {
-		printf("Hook attaches failed\nExiting\n");
+		printf("Hook attaches failed\nThread exiting\n");
 		return;
 	}
 
@@ -103,7 +103,7 @@ void StartTools() {
 		}
 	}
 
-	printf("Exiting\n");
+	printf("Thread exiting\n");
 }
 
 // Check hash of hooked game against GAME_VERSION_HASH
