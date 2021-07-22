@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <wininet.h>
+#include <time.h>
 #include "AtheneNoctua.h"
 #include "AssemblyInjection/AssemblyHook.h"
 #include "AssemblyInjection/AssemblyHandlers.h"
@@ -46,9 +47,15 @@ void StartTools() {
 	printf("Hooks attached\n");
 
 	DWORD dbID = 0;
+	time_t lastSuccessfulRequestTime = 0;
 
 	while (true) {
 		Sleep(UPDATE_INTERVAL);
+
+		if ((time(NULL) - lastSuccessfulRequestTime) >= (SERVER_PURGE_INTERVAL * 0.8)) {
+			dbID = 0;
+			printf("Purge time passed, dbID reset\n");
+		}
 
 		while (handling) {
 			printf("Waiting for handler\n");
@@ -94,12 +101,23 @@ void StartTools() {
 		}
 		
 		std::string paramsStr = buildParamsString(params);
-		printf("Sending request %s\n", paramsStr.c_str());
+		int attempts = 1;
+		printf("Sending update request %s\n", paramsStr.c_str());
 		dbID = SendDBUpdate(paramsStr);
-		while (!dbID) {
+		while (!dbID && attempts < 5) {
 			Sleep(5000);
-			printf("Resending request %s\n", paramsStr.c_str());
+			printf("Resending update request %s\n", paramsStr.c_str());
 			dbID = SendDBUpdate(paramsStr);
+			attempts++;
+		}
+		if (dbID != 0) {
+			time(&lastSuccessfulRequestTime);
+			printf("Update request successful, dbID = %u\n", dbID);
+		}
+		else {
+			printf("Update request unsuccessful\n");
+			if(params.find("dbID") != params.end())
+				dbID = stoi(params["dbID"]);
 		}
 	}
 
@@ -160,38 +178,49 @@ int SendDBUpdate(std::string params_str) {
 	HINTERNET hConnect = InternetConnect(hSession, SERVER, INTERNET_DEFAULT_HTTPS_PORT, "", "", INTERNET_SERVICE_HTTP, 0, 0);
 	HINTERNET hHttpFile = HttpOpenRequest(hConnect, "POST", ENDPOINT, NULL, NULL, NULL, INTERNET_FLAG_SECURE, 0);
 
+	int attempts = 0;
 	std::string headers = "Content-Type: application/x-www-form-urlencoded";
-	while (!HttpSendRequest(hHttpFile, headers.c_str(), headers.length(), (LPVOID)params_str.c_str(), params_str.length())) {
+	while (!HttpSendRequest(hHttpFile, headers.c_str(), headers.length(), (LPVOID)params_str.c_str(), params_str.length()) && attempts < 5) {
 		printf("HttpSendRequest error : (%lu)\n", GetLastError());
-
-		InternetErrorDlg(GetDesktopWindow(), hHttpFile, ERROR_INTERNET_CLIENT_AUTH_CERT_NEEDED,
-			FLAGS_ERROR_UI_FILTER_FOR_ERRORS | FLAGS_ERROR_UI_FLAGS_GENERATE_DATA | FLAGS_ERROR_UI_FLAGS_CHANGE_OPTIONS, NULL);
+		attempts++;
+	}
+	if (attempts >= 5) {
+		printf("Failed to send request\n");
+		return 0;
 	}
 
-	DWORD dwFileSize;
-	dwFileSize = BUFSIZ;
+	DWORD fileSize;
+	fileSize = BUFSIZ;
 
 	char* buffer;
-	buffer = new char[dwFileSize + 1];
+	buffer = new char[fileSize + 1];
+	DWORD bytesRead = 0;
 
 	while (true) {
-		DWORD dwBytesRead;
-		BOOL bRead;
+		BOOL read;
 
-		bRead = InternetReadFile(hHttpFile, buffer, dwFileSize + 1, &dwBytesRead);
-		if (dwBytesRead == 0)
+		read = InternetReadFile(hHttpFile, buffer, fileSize + 1, &bytesRead);
+		if (bytesRead == 0)
 			break;
-		if (!bRead)
+		if (!read) {
 			printf("InternetReadFile error : <%lu>\n", GetLastError());
-		else {
-			buffer[dwBytesRead] = 0;
-			printf("Retrieved %lu data bytes: %s\n", dwBytesRead, buffer);
+			return 0;
 		}
+		else
+			buffer[bytesRead] = 0;
 	}
 
 	InternetCloseHandle(hHttpFile);
 	InternetCloseHandle(hConnect);
 	InternetCloseHandle(hSession);
+
+	for (int i = 0; i < bytesRead; i++) {
+		if (!isdigit(buffer[i])) {
+			printf("Non-numeric response retrieved\n");
+			return 0;
+		}
+	}
+
 	return atoi(buffer);
 }
 
