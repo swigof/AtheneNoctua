@@ -43,7 +43,7 @@ The server acts as the receiver for character location data and should have a fr
 * It should return the ID of the updated or new entry on successful processing.
 * It should return 0 on unsuccessful processing.
 * It should automatically set an attribute to hide entries from the frontend after a few minutes without updates.
-* It should automatically remove rows after some number of hours without updates (depending on frontend implementation).
+* It should automatically remove entries after some number of hours without updates (depending on frontend implementation).
 
 The caveat of the last point is based on the limitation that multiple entries can exist for the same character simultaneously. If this isn't accounted for on the frontend, more frequent deletions will be favorable.
 
