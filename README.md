@@ -33,6 +33,9 @@ This project's dependencies are exclusively windows libraries and the packaged d
 
 Compile for 32bit with VS2019.
 
+# Installing
+Simply drop the created dll file into your client folder next to the exe.
+
 # Server
 The server acts as the receiver for character location data and should have a frontend for users to view the characters locations. Each database entry acts as a seperate client session.
 * It should add new database entries when an ID is not specified in a request. 
