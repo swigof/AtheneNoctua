@@ -42,7 +42,7 @@ The server acts as the receiver for character location data and should have a fr
 * It should automatically set an attribute to hide entries from the frontend after a few minutes without updates.
 * It should automatically remove rows after some number of hours without updates (depending on frontend implementation).
 
-The caveat of the last point is based on the limitation that multiple entries can exist for the same character simultaneously.
+The caveat of the last point is based on the limitation that multiple entries can exist for the same character simultaneously. If this isn't accounted for on the frontend, more frequent deletions will be favorable.
 
 An example server using Google Sheets and Apps Script can be found [here](https://docs.google.com/spreadsheets/d/1j0O5MKdWuDezclsS6xD2Soje6PHYGriu9NWVrOV_dFs/edit#gid=584115897).
 
