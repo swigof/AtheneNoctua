@@ -52,11 +52,13 @@ void StartTools() {
 	while (true) {
 		Sleep(UPDATE_INTERVAL);
 
+		// reset dbID if the purge time has passed
 		if ((time(NULL) - lastSuccessfulRequestTime) >= (SERVER_PURGE_INTERVAL * 0.8)) {
 			dbID = 0;
 			printf("Purge time passed, dbID reset\n");
 		}
 
+		// wait for game data to be read
 		while (handling) {
 			printf("Waiting for handler\n");
 			Sleep(500);
@@ -110,7 +112,7 @@ void StartTools() {
 			dbID = SendDBUpdate(paramsStr);
 			attempts++;
 		}
-		if (dbID != 0) {
+		if (dbID) {
 			time(&lastSuccessfulRequestTime);
 			printf("Update request successful, dbID = %u\n", dbID);
 		}
