@@ -33,6 +33,21 @@ This project's dependencies are exclusively windows libraries and the packaged d
 
 Compile for 32bit with VS2019.
 
+# Server
+The server acts as the receiver for character location data and should have a frontend for users to view the characters locations. Each database entry acts as a seperate client session.
+* It should add new database entries when an ID is not specified in a request. 
+* It should edit existing ones when a valid ID is provided. 
+* It should return the ID of the updated or new entry on successful processing.
+* It should return 0 on unsuccessful processing.
+* It should automatically set an attribute to hide entries from the frontend after a few minutes without updates.
+* It should automatically remove rows after some number of hours without updates (depending on frontend implementation).
+
+The caveat of the last point is based on the limitation that multiple entries can exist for the same character simultaneously.
+
+An example server using Google Sheets and Apps Script can be found [here](https://docs.google.com/spreadsheets/d/1j0O5MKdWuDezclsS6xD2Soje6PHYGriu9NWVrOV_dFs/edit#gid=584115897).
+
+To get the server script, make a copy of the sheet then navigate to Tools->Script editor.
+
 # LICENSE 
 Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.
 
