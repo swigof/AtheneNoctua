@@ -26,7 +26,7 @@ They have a minimum required size of 6 and must cover operations fully.
 These hookpoints won't be hit exclusively when there is a change however so actual changes are manually checked.
 For example, on any map change the CHANNEL_CHANGE is actually hit, though this may not be the case for all clients or hookpoint possibilities.
 
-An example ConfigurationConstants.h can be seen here
+An example ConfigurationConstants.h can be seen [here](https://drive.google.com/file/d/1KEMAgNg8IbhrFRHXzklYVnxt2jsiqcUs/view).
 
 # Compiling
 This project's dependencies are exclusively windows libraries and the packaged d3d8 library.
