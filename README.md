@@ -1,5 +1,5 @@
 # Athene Noctua
-This is a dll based mod for oldschool Maplestory servers which is used to scrape character map location data.
+This is a dll based mod for oldschool Maplestory clients which is used to scrape character map location data.
 
 It is meant to be used in conjuction with a server that receives this data then serves it as an index of teleport rock locations.
 
