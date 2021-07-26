@@ -37,15 +37,13 @@ Compile for 32bit with VS2019.
 Simply drop the created dll file into your client folder next to the exe.
 
 # Server
-The server acts as the receiver for character location data and should have a frontend for users to view the characters locations. Each database entry acts as a seperate client session.
+The server acts as the receiver for character location data and should have a frontend for users to view this location data. Each database entry acts as a seperate client session. Due to this, it is possible that multiple entries with the same character name can exist simultaneously. Expected behavior for the server is as follows.
 * It should add new database entries when an ID is not specified in a request. 
 * It should edit existing ones when a valid ID is provided. 
 * It should return the ID of the updated or new entry on successful processing.
 * It should return 0 on unsuccessful processing.
 * It should automatically set an attribute to hide entries from the frontend after a few minutes without updates.
-* It should automatically remove entries after some number of hours without updates (depending on frontend implementation).
-
-The caveat of the last point is based on the limitation that multiple entries can exist for the same character simultaneously. If this isn't accounted for on the frontend, more frequent deletions will be favorable.
+* It should automatically remove entries after some number of hours without updates.
 
 An example server using Google Sheets and Apps Script can be found [here](https://docs.google.com/spreadsheets/d/1j0O5MKdWuDezclsS6xD2Soje6PHYGriu9NWVrOV_dFs/edit#gid=584115897).
 
