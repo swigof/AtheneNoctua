@@ -54,74 +54,78 @@ void StartTools() {
 	while (running) {
 		Sleep(UPDATE_INTERVAL);
 
-		// reset dbID if the purge time has passed
-		if ((time(NULL) - lastSuccessfulRequestTime) >= (SERVER_PURGE_INTERVAL * 0.8)) {
-			dbID = 0;
-			printf("Purge time passed, dbID reset\n");
-		}
-
 		// wait for game data to be read
 		while (handling) {
 			printf("Waiting for handler\n");
 			Sleep(500);
 		}
-
-		printf("Setting request params\n");
-
-		std::map<std::string, std::string> params;
-
-		if (playerData.changeFlags.areaName) {
-			params.emplace("areaName", playerData.areaName);
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.areaName = false;
-		}
-		if (playerData.changeFlags.channel) {
-			params.emplace("channel", std::to_string(playerData.channel + 1));
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.channel = false;
-		}
-		if (playerData.changeFlags.characterName) {
-			params.emplace("characterName", std::string((char*)playerData.characterName.bytes, 12));
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.characterName = false;
-		}
-		if (playerData.changeFlags.mapID) {
-			params.emplace("mapID", std::to_string(playerData.mapID));
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.mapID = false;
-		}
-		if (playerData.changeFlags.mapName) {
-			params.emplace("mapName", playerData.mapName);
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.mapName = false;
-		}
-		if (playerData.changeFlags.onMap) {
-			params.emplace("onMap", std::to_string(playerData.onMap));
-			params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
-			playerData.changeFlags.onMap = false;
-		}
-		if (dbID) {
-			params.emplace("dbID", std::to_string(dbID));
-		}
 		
-		std::string paramsStr = BuildParamsString(params);
-		int attempts = 1;
-		printf("Sending update request %s\n", paramsStr.c_str());
-		dbID = SendDBUpdate(paramsStr);
-		while (!dbID && attempts < 5) {
-			Sleep(5000);
-			printf("Resending update request %s\n", paramsStr.c_str());
+		// only process if an initial change has occured
+		if (playerData.lastChangeTime) { 
+
+			// reset dbID if the purge time has passed
+			if ((time(NULL) - lastSuccessfulRequestTime) >= (SERVER_PURGE_INTERVAL * 0.8)) {
+				dbID = 0;
+				printf("Purge time passed, dbID reset\n");
+			}
+
+			// set request parameters
+			printf("Setting request params\n");
+			std::map<std::string, std::string> params;
+			if (playerData.changeFlags.areaName) {
+				params.emplace("areaName", playerData.areaName);
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.areaName = false;
+			}
+			if (playerData.changeFlags.channel) {
+				params.emplace("channel", std::to_string(playerData.channel + 1));
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.channel = false;
+			}
+			if (playerData.changeFlags.characterName) {
+				params.emplace("characterName", std::string((char*)playerData.characterName.bytes, 12));
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.characterName = false;
+			}
+			if (playerData.changeFlags.mapID) {
+				params.emplace("mapID", std::to_string(playerData.mapID));
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.mapID = false;
+			}
+			if (playerData.changeFlags.mapName) {
+				params.emplace("mapName", playerData.mapName);
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.mapName = false;
+			}
+			if (playerData.changeFlags.onMap) {
+				params.emplace("onMap", std::to_string(playerData.onMap));
+				params.emplace("lastChange", std::to_string(playerData.lastChangeTime));
+				playerData.changeFlags.onMap = false;
+			}
+			if (dbID) {
+				params.emplace("dbID", std::to_string(dbID));
+			}
+			std::string paramsStr = BuildParamsString(params);
+
+			// send request
+			int attempts = 1;
+			printf("Sending update request %s\n", paramsStr.c_str());
 			dbID = SendDBUpdate(paramsStr);
-			attempts++;
-		}
-		if (dbID) {
-			time(&lastSuccessfulRequestTime);
-			printf("Update request successful, dbID = %u\n", dbID);
-		}
-		else {
-			printf("Update request unsuccessful\n");
-			if(params.find("dbID") != params.end())
-				dbID = stoi(params["dbID"]);
+			while (!dbID && attempts < 5) {
+				Sleep(5000);
+				printf("Resending update request %s\n", paramsStr.c_str());
+				dbID = SendDBUpdate(paramsStr);
+				attempts++;
+			}
+			if (dbID) {
+				time(&lastSuccessfulRequestTime);
+				printf("Update request successful, dbID = %u\n", dbID);
+			}
+			else {
+				printf("Update request unsuccessful\n");
+				if (params.find("dbID") != params.end())
+					dbID = stoi(params["dbID"]);
+			}
 		}
 	}
 

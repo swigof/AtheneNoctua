@@ -21,5 +21,5 @@ constexpr char* GAME_VERSION_HASH = "";
 constexpr int UPDATE_INTERVAL = 60000;
 
 // time after which the server removes inactive entries in seconds
-// is adjusted to 80% of the value for client side purging
+// adjusted to 80% of the value for client side purging
 constexpr int SERVER_PURGE_INTERVAL = 3600;
