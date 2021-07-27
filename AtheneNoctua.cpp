@@ -7,6 +7,8 @@
 #include "AssemblyInjection/AssemblyHandlers.h"
 #include "ConfigurationConstants.h"
 
+bool running = true;
+
 // from AssemblyHandlers
 extern playerdata playerData;
 extern bool handling;
@@ -49,7 +51,7 @@ void StartTools() {
 	DWORD dbID = 0;
 	time_t lastSuccessfulRequestTime = 0;
 
-	while (true) {
+	while (running) {
 		Sleep(UPDATE_INTERVAL);
 
 		// reset dbID if the purge time has passed
@@ -102,7 +104,7 @@ void StartTools() {
 			params.emplace("dbID", std::to_string(dbID));
 		}
 		
-		std::string paramsStr = buildParamsString(params);
+		std::string paramsStr = BuildParamsString(params);
 		int attempts = 1;
 		printf("Sending update request %s\n", paramsStr.c_str());
 		dbID = SendDBUpdate(paramsStr);
@@ -227,7 +229,7 @@ int SendDBUpdate(std::string params_str) {
 }
 
 // Builds the parameters string for a post request.
-std::string buildParamsString(std::map<std::string, std::string> params) {
+std::string BuildParamsString(std::map<std::string, std::string> params) {
 
 	std::string params_str = "";
 
@@ -249,4 +251,9 @@ std::string buildParamsString(std::map<std::string, std::string> params) {
 	}
 
 	return params_str;
+}
+
+// sets running to false, exiting the main loop
+void StopRunning() {
+	running = false;
 }
