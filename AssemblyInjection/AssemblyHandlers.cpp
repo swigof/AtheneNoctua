@@ -94,7 +94,7 @@ __declspec(naked) void AreaNameChangeHandler() {
 	__asm pushf
 	__asm call SaveRegisters
 
-	if (playerData.areaName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
+	if (playerData.areaName.length() != *((DWORD*)regs.eax - 1) || playerData.areaName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.areaName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.areaName = true;
 		time(&playerData.lastChangeTime);
@@ -113,7 +113,7 @@ __declspec(naked) void MapNameChangeHandler() {
 	__asm pushf
 	__asm call SaveRegisters
 
-	if (playerData.mapName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
+	if (playerData.mapName.length() != *((DWORD*)regs.eax - 1) || playerData.mapName.compare(0, *((DWORD*)regs.eax - 1), (char*)regs.eax)) {
 		playerData.mapName.assign((char*)regs.eax, *((DWORD*)regs.eax - 1));
 		playerData.changeFlags.mapName = true;
 		time(&playerData.lastChangeTime);
